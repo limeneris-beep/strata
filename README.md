@@ -133,24 +133,6 @@ Only Acend hits all six.
 
 ---
 
-## Quick Start
-
-```bash
-cd ~/hermes/projects/black-box/acend
-
-# Install dependencies
-npm install
-
-# Start the server
-node server.js
-# → http://localhost:8081/
-
-# Start AVL pipeline (separate terminal)
-node src/avl/index.js
-```
-
----
-
 ## How AVL Works
 
 1. **Sample** — Depth Sampler calls Jupiter `/quote` at 12 size increments (~0.1 to 250 SOL) to map the liquidity curve
@@ -186,21 +168,95 @@ Ultra-short options embedded in the book. Liquidity prediction markets. Full PvP
 
 ---
 
-## The Vision
+## Beyond Spot — Financial Primitives Built on Visible Depth
 
-> Every piece of liquidity becomes a position in a meta-game.
+> Visible depth isn't just a UX feature. It's an ingredient for new financial primitives.
+
+The three-layer order book creates something no other DEX has: **a fully transparent, real-time map of available liquidity at every price level.** This isn't just better for traders — it's a substrate for entirely new products that can only exist when depth is visible and programmatic.
+
+---
+
+### Liquidity Prediction Markets
+
+*"Will there be >500 SOL of depth at $150 in the next hour?"*
+
+Bet on the book itself. Traders stake on whether specific price levels will fill within a time window — speculating on order book microstructure and depth dynamics. Predictions aggregate into a signal that feeds back into the book: more bets create more informed liquidity.
+
+**Why it matters:** Prediction markets are the most efficient known mechanism for aggregating dispersed information. Applied to the order book, they surface hidden liquidity expectations. A market maker seeing a surge of "yes" bets on a deep level gets an early signal to quote there. The book becomes self-aware.
+
+---
+
+### Yield-Bearing Limit Orders
+
+*Your resting order earns while it waits.*
+
+Resting limit orders that sit unfilled serve as collateral for short-duration options elsewhere in DeFi. The order stays available on the book — the maker simply earns a premium for letting their locked capital work across protocols. No action required. No risk to the original order.
+
+**How it works:**
+1. Maker places a limit order → funds locked in UserVault PDA
+2. Acend writes a covered call or cash-secured put against those locked funds
+3. Option expires in minutes to hours — sold to liquidity bettors on Acend's own market
+4. If the limit order fills, the option was OTM (no exercise) → maker keeps premium
+5. If the limit order doesn't fill, the option resolves normally
+
+**Yield-bearing orders turn every limit order into a dual-purpose position.** The maker is simultaneously providing spot liquidity and selling volatility. The first cross-protocol integration targets Solana lending markets (Kamino, Marginfi, Solend) for the collateral leg.
+
+---
+
+### Ultra-Short Options — Embedded in the Book
+
+*Calls and puts with 30-minute to 4-hour expiries, displayed inline alongside spot orders.*
+
+On Acend, spot and derivatives live in one interface — not two separate products. An ultra-short call at $155 sits on the same book as a spot ask at $155. Traders see both. They can fill either.
+
+This collapses the mental distance between spot and options. A trader who thinks "SOL will hit $155 in the next hour" can:
+- **Buy spot** at market and sell at $155 (traditional)
+- **Buy a $155 call** expiring in 1 hour (natively, on the same book)
+- **Write a put** against their existing spot position
+
+All three are one click. All three sit on the same interface.
+
+**The key insight:** short-duration options are not a separate product category — they're a natural extension of visible depth. If you can see the book, you can bet on where it's going.
+
+---
+
+### Collateral-Concentrated Liquidity Ranges with Leverage
+
+*Concentrated liquidity meets order book market making — with leverage.*
+
+Inspired by Uniswap v3's concentrated liquidity but rebuilt for a CLOB: liquidity providers stake collateral into a **price range** (e.g., $145-$155) rather than a single price level. The order book automatically distributes their depth across that range as segmented virtual orders.
+
+**Leverage:** Because the range bounds the provider's risk, the system can offer leverage — a provider staking $1,000 of collateral can represent $3,000-$5,000 of depth within their chosen range. This is capital-efficient market making without running a bot, without managing inventory, without paying for RPC nodes.
+
+**Range tiles slot into the book alongside everything else.** A trader sees:
+- Real orders at discrete price levels
+- Intent orders from professional MMs  
+- AVL depth from Jupiter
+- Range-provided depth spanning a band of prices (labeled)
+
+Liquidity providers earn the spread from fills within their range. If price exits the range, the position is automatically unwound and collateral returned. No impermanent loss in the AMM sense — fills happen at the stated price, exactly like limit orders.
+
+---
+
+### The Self-Sustaining Cycle
 
 ```
 More games → More volume → Deeper books → Better prices → More traders → More games
 ```
 
-Three participant classes emerge:
+Five participant types emerge around visible depth:
 
-- **Options Writers** — Resting orders generate options. Collect premium while their order stays available.
-- **Liquidity Bettors** — Bet on whether levels will fill. Speculate on book microstructure and depth dynamics.
-- **Spot Traders** — Get deeper books from all the meta-game activity. Better prices, more counterparties.
+| Participant | Action | Earns |
+|-------------|--------|-------|
+| **Spot Traders** | Trade on the unified book | Better fills from aggregated depth |
+| **Options Writers** | Limit orders auto-generate covered options | Premium while order stays available |
+| **Liquidity Bettors** | Predict whether levels will fill | Payouts on correct microstructure calls |
+| **Range Providers** | Concentrate collateral across price bands | Spread from fills + leverage multiplier |
+| **Market Makers** | Quote inside AVL spread | Native spread capture at near-zero hedge cost |
 
-The line between trading and gaming dissolves.
+Every piece of liquidity becomes a position in a meta-game. The line between trading and gaming dissolves.
+
+No other DEX is building toward this.
 
 ---
 
