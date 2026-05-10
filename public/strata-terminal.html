@@ -4556,10 +4556,14 @@ window.API_BASE = 'https://733b23ff6b43abfe-49-145-104-158.serveousercontent.com
         const bbr = document.getElementById('ob-bar-bid'), abr = document.getElementById('ob-bar-ask');
         if (bpe && ape && bbr && abr) {
             const td = maxBid + maxAsk;
-            let bp = 50, ap = 50;
-            if (td > 2) { bp = (maxBid/td)*100; ap = (maxAsk/td)*100; }
-            bpe.textContent = bp.toFixed(1)+'%'; ape.textContent = ap.toFixed(1)+'%';
-            bbr.style.width = bp+'%'; abr.style.width = ap+'%';
+            if (td > 2) {
+                const bp = (maxBid/td)*100, ap = (maxAsk/td)*100;
+                bpe.textContent = bp.toFixed(1)+'%'; ape.textContent = ap.toFixed(1)+'%';
+                bbr.style.width = bp+'%'; abr.style.width = ap+'%';
+            } else {
+                bpe.textContent = '\u2014'; ape.textContent = '\u2014';
+                bbr.style.width = '0%'; abr.style.width = '0%';
+            }
         }
     }
     function initOrderbookTabs() {
