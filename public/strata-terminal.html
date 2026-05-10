@@ -6207,7 +6207,7 @@ window.API_BASE = 'https://733b23ff6b43abfe-49-145-104-158.serveousercontent.com
     }
 
     // ========== EXPLORER ==========
-    const ENGINE_BASE = ''; // Use relative paths — frontend is served from the same server
+    const ENGINE_BASE = window.API_BASE || ''; // Use API_BASE when deployed, relative for local dev
     let explorerCheckpoints = [];
     let explorerInterval = null;
     let verifiedSet = new Set(); // track verified seqs client-side
