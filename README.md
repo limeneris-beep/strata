@@ -276,7 +276,7 @@ In-house, product-specific AI agent that handles development management, code ge
 ## Links
 
 - **Website:** [stratabook.org](https://stratabook.org)
-- **GitHub:** [github.com/limeneris-beep/acend](https://github.com/limeneris-beep/acend)
+- **GitHub:** [github.com/limeneris-beep/strata](https://github.com/limeneris-beep/strata)
 - **Devnet Program:** `4EoitT7wRJjQ5YZF8HEMEDY2RUvcWeJVZVTNNZVFf73x`
 
 ## Tech Stack
