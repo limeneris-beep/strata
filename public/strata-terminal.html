@@ -18,7 +18,7 @@
     <style>
 /* === theme.css (inlined) === */
 /* ============================================
-   ACEND THEME TOKENS
+   STRATA THEME TOKENS
    Dark-first DEX standard (dYdX / Hyperliquid / Jupiter convergence)
    Teal accent · Cool dark bg · Green/red directionals · Flat UI
    ============================================ */
@@ -120,7 +120,7 @@
     <style>
 /* === style.css (inlined) === */
 /* ============================================
-   ACEND — Professional DEX Trading Terminal
+   Strata — Professional DEX Trading Terminal
    Dark-first · Teal accent · dYdX/Hyperliquid/Jupiter convergence
    ============================================ */
 
@@ -3221,7 +3221,7 @@ body {
 
     <script>
 /* === clob.js (inlined) === */
-// clob.js — ACEND CLOB WebSocket Client SDK
+// clob.js — Strata CLOB WebSocket Client SDK
 // Connects to the off-chain matching engine via WebSocket
 // and provides on-chain deposit/withdraw via Solana
 
@@ -3490,7 +3490,7 @@ body {
 
             const timestamp = Date.now();
             // DEV: prefix tells server to skip Ed25519 signature verification
-            const message = `DEV: ACEND CLOB Login: ${timestamp}`;
+            const message = `DEV: Strata CLOB Login: ${timestamp}`;
 
             let signature = 'DEV_BYPASS';
             if (walletAdapter && walletAdapter.signMessage) {
@@ -4356,7 +4356,7 @@ body {
 
         // CLOB WebSocket: used ONLY for trade feed, NOT orderbook.
         // The three liquidity feeds (intents, mmOrders, onchain) via
-        // ACEND_LIQUIDITY_FEEDS drive the segmented orderbook depth bars.
+        // STRATA_LIQUIDITY_FEEDS drive the segmented orderbook depth bars.
         if (window.clob && window.clob.client) {
             // Listen for trades
             window.clob.client.on('trade', (trade) => {
@@ -4611,7 +4611,7 @@ body {
     //  at least once, mock data will no longer overwrite it.
     // ================================================================
 
-    const ACEND_LIQUIDITY_FEEDS = {
+    const STRATA_LIQUIDITY_FEEDS = {
 
         // ── LIGHT segment ── Intents ─────────────────────────────
         // Wide, lumpy intent orders (polled from server.js generator)
@@ -4755,7 +4755,7 @@ body {
     function startMockMarketMaker() {
         if (mmActive) return;
         mmActive = true;
-        _aggregator = new LiquidityAggregator(ACEND_LIQUIDITY_FEEDS);
+        _aggregator = new LiquidityAggregator(STRATA_LIQUIDITY_FEEDS);
         _aggregator.start();
         const t = () => { if (state.currentPrice > 0) { generateMockOrders(); mmStarted = true; return; } if (!mmStarted && mmActive) setTimeout(t, 200); };
         t();
