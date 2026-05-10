@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * acend unified server v2
+ * strata unified server v2
  * WebSocket CLOB + HTTP REST + matching engine
  * Replaces server-unified.js
  */
@@ -966,7 +966,7 @@ wss.on('connection', (ws) => {
 
 // ─── Start ────────────────────────────────────────────────────────
 server.listen(PORT, () => {
-  console.log(`acend v2 server → http://localhost:${PORT}`);
+  console.log(`strata v2 server → http://localhost:${PORT}`);
   console.log(`  WebSocket /ws  — CLOB matching engine`);
   console.log(`  REST /api/*    — orderbook, stats, trades, balances`);
   console.log(`  AVL proxy /avl → localhost:${AVL_PORT}`);

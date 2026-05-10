@@ -1,4 +1,4 @@
-# Acend
+# Strata
 
 **The order book Solana never had.**
 
@@ -7,13 +7,13 @@
 [![Colosseum Hackathon 2026](https://img.shields.io/badge/Colosseum-2026-purple)](#)
 
 > $1.6T on-chain volume. Zero real spot exchanges.  
-> Acend is the first order book DEX on Solana that doesn't look empty — ever.
+> Strata is the first order book DEX on Solana that doesn't look empty — ever.
 
 ---
 
-## What Is Acend?
+## What Is Strata?
 
-Acend is a next-generation order book DEX built on Solana. It combines **three liquidity layers** into one unified book:
+Strata is a next-generation order book DEX built on Solana. It combines **three liquidity layers** into one unified book:
 
 ```
 Layer 1 ████████  REAL LIMIT ORDERS (green/red)
@@ -38,7 +38,7 @@ No other Solana DEX shows you all three.
 
 Yet there are **zero Solana DEXes** with a real exchange-grade UX. AMMs hide liquidity behind swap widgets. Phoenix and OpenBook need paid market makers to bootstrap every market. Pros stay on Binance.
 
-**The Solution:** Acend doesn't wait for liquidity to arrive. It pulls existing AMM depth from across Solana (via Jupiter) and renders it as visible order book depth. Real user orders sit alongside this. Market makers compete on spread — not on who gets paid the most rebates.
+**The Solution:** Strata doesn't wait for liquidity to arrive. It pulls existing AMM depth from across Solana (via Jupiter) and renders it as visible order book depth. Real user orders sit alongside this. Market makers compete on spread — not on who gets paid the most rebates.
 
 **The Slogan:** *"All liquidity, on the books."*
 
@@ -70,7 +70,7 @@ When a taker hits virtual depth, the matching engine fetches a **fresh** Jupiter
 
 ## Structural Edge
 
-| | Everyone Else | Acend |
+| | Everyone Else | Strata |
 |---|---|---|
 | **MM model** | Pay MMs to bootstrap ($1M+/yr per pair) | MMs profit by quoting tighter than AVL |
 | **Day-one depth** | Empty books | Deep books — AMM depth already on the book |
@@ -83,7 +83,7 @@ When a taker hits virtual depth, the matching engine fetches a **fresh** Jupiter
 
 ## Competitive Landscape
 
-| | Acend | Jupiter | Phoenix | Binance |
+| | Strata | Jupiter | Phoenix | Binance |
 |---|---|---|---|---|
 | **Order book UI** | ✓ | ✗ | ✓ | ✗ |
 | **Limit / Post-only** | ✓ | Partial | ✓ | ✓ |
@@ -92,7 +92,7 @@ When a taker hits virtual depth, the matching engine fetches a **fresh** Jupiter
 | **Permissionless pairs** | ✓ | ✓ | ✓ | N/A |
 | **No paid MM needed** | ✓ | N/A | ✗ | N/A |
 
-Only Acend hits all six.
+Only Strata hits all six.
 
 ---
 
@@ -118,7 +118,7 @@ Only Acend hits all six.
 └──────────────┘     │                   │     └─────────────┘
                      │ • Order book view  │
 ┌──────────────┐     │ • Waterfall logic  │     ┌─────────────┐
-│ Jupiter API  │────▶│ • Settlement tx    │────▶│ Acend       │
+│ Jupiter API  │────▶│ • Settlement tx    │────▶│ Strata       │
 │ (AVL quotes) │     │ • WS real-time     │     │ Program     │
 └──────────────┘     └──────────────────┘     └─────────────┘
         │                                            │
@@ -194,8 +194,8 @@ Resting limit orders that sit unfilled serve as collateral for short-duration op
 
 **How it works:**
 1. Maker places a limit order → funds locked in UserVault PDA
-2. Acend writes a covered call or cash-secured put against those locked funds
-3. Option expires in minutes to hours — sold to liquidity bettors on Acend's own market
+2. Strata writes a covered call or cash-secured put against those locked funds
+3. Option expires in minutes to hours — sold to liquidity bettors on Strata's own market
 4. If the limit order fills, the option was OTM (no exercise) → maker keeps premium
 5. If the limit order doesn't fill, the option resolves normally
 
@@ -207,7 +207,7 @@ Resting limit orders that sit unfilled serve as collateral for short-duration op
 
 *Calls and puts with 30-minute to 4-hour expiries, displayed inline alongside spot orders.*
 
-On Acend, spot and derivatives live in one interface — not two separate products. An ultra-short call at $155 sits on the same book as a spot ask at $155. Traders see both. They can fill either.
+On Strata, spot and derivatives live in one interface — not two separate products. An ultra-short call at $155 sits on the same book as a spot ask at $155. Traders see both. They can fill either.
 
 This collapses the mental distance between spot and options. A trader who thinks "SOL will hit $155 in the next hour" can:
 - **Buy spot** at market and sell at $155 (traditional)
@@ -275,7 +275,7 @@ In-house, product-specific AI agent that handles development management, code ge
 
 ## Links
 
-- **Website:** [acend.xyz](https://acend.xyz)
+- **Website:** [stratabook.org](https://stratabook.org)
 - **GitHub:** [github.com/limeneris-beep/acend](https://github.com/limeneris-beep/acend)
 - **Devnet Program:** `4EoitT7wRJjQ5YZF8HEMEDY2RUvcWeJVZVTNNZVFf73x`
 
@@ -292,4 +292,4 @@ In-house, product-specific AI agent that handles development management, code ge
 ---
 
 *Built for the Colosseum Hackathon 2026. Seed stage.*  
-*Phizen & Kaiden · acend.xyz*
+*Phizen & Kaiden · stratabook.org*

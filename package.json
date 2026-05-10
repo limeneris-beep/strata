@@ -1,7 +1,7 @@
 {
-  "name": "acend-server",
+  "name": "strata-server",
   "version": "2.0.0",
-  "description": "acend DEX unified server — WebSocket + HTTP + matching engine",
+  "description": "Strata DEX unified server — WebSocket + HTTP + matching engine",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"
