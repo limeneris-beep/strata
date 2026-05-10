@@ -4078,8 +4078,8 @@ window.API_BASE = 'https://733b23ff6b43abfe-49-145-104-158.serveousercontent.com
     'use strict';
 
     // Load theme from localStorage before rendering
-    if (localStorage.getItem('theme') === 'dark') {
-        document.documentElement.setAttribute('data-theme', 'dark');
+    if (localStorage.getItem('theme') === 'light') {
+        document.documentElement.setAttribute('data-theme', 'light');
     }
 
     // ========== CONFIG & STATE ==========
@@ -5473,32 +5473,33 @@ window.API_BASE = 'https://733b23ff6b43abfe-49-145-104-158.serveousercontent.com
         const moonIcon = document.getElementById('icon-moon');
         const sunIcon = document.getElementById('icon-sun');
 
-        // Set correct icon on load
+        // Set correct icon and theme on load
         const savedTheme = localStorage.getItem('theme');
-        const isDark = savedTheme === 'dark';
-        if (isDark) {
-            document.documentElement.setAttribute('data-theme', 'dark');
-            applyChartTheme(true);
+        const isLight = savedTheme === 'light';
+        if (isLight) {
+            document.documentElement.setAttribute('data-theme', 'light');
+        } else {
+            document.documentElement.removeAttribute('data-theme');
         }
         if (moonIcon && sunIcon) {
-            moonIcon.style.display = isDark ? 'none' : '';
-            sunIcon.style.display = isDark ? '' : 'none';
+            moonIcon.style.display = isLight ? 'none' : '';
+            sunIcon.style.display = isLight ? '' : 'none';
         }
         
         toggleBtn.addEventListener('click', () => {
             const currentTheme = document.documentElement.getAttribute('data-theme');
-            const goingDark = currentTheme !== 'dark';
+            const goingLight = currentTheme !== 'light';
             
-            if (goingDark) {
-                document.documentElement.setAttribute('data-theme', 'dark');
-                localStorage.setItem('theme', 'dark');
-                applyChartTheme(true);
+            if (goingLight) {
+                document.documentElement.setAttribute('data-theme', 'light');
+                localStorage.setItem('theme', 'light');
+                applyChartTheme(false);
                 if (moonIcon) moonIcon.style.display = 'none';
                 if (sunIcon) sunIcon.style.display = '';
             } else {
                 document.documentElement.removeAttribute('data-theme');
-                localStorage.setItem('theme', 'light');
-                applyChartTheme(false);
+                localStorage.setItem('theme', 'dark');
+                applyChartTheme(true);
                 if (moonIcon) moonIcon.style.display = '';
                 if (sunIcon) sunIcon.style.display = 'none';
             }
