@@ -4676,7 +4676,7 @@ body {
     // ================================================================
     class LiquidityAggregator {
         // tickSize: price bucket (USD) used to align levels from different sources
-        constructor(feeds, tickSize = 1) {
+        constructor(feeds, tickSize = 0.01) {
             this._feeds       = feeds;
             this._tickSize    = tickSize;
             this._latest      = {};          // feedKey → { bids, asks }

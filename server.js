@@ -544,7 +544,7 @@ class MatchingEngine {
       map[o.price] = (map[o.price] || 0) + remaining;
     }
     return Object.entries(map)
-      .map(([price, size]) => [parseInt(price), size])
+      .map(([price, size]) => [parseFloat(price), size])
       .sort((a, b) => b[0] - a[0])
       .slice(0, depth);
   }
