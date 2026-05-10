@@ -5128,6 +5128,247 @@ window.API_BASE = 'https://733b23ff6b43abfe-49-145-104-158.serveousercontent.com
         resizeObserver.observe(container);
     }
 
+    function updateChartLastCandle(price) {
+        if (!candleSeries || candleData.length === 0) return;
+        // Reject bad prices: 0, NaN, or >25% away from last close
+        const lastClose = candleData[candleData.length - 1].close;
+        if (!price || price <= 0 || isNaN(price)) return;
+        if (lastClose > 0 && (price > lastClose * 1.25 || price < lastClose * 0.75)) return;
+        
+        const lastCandle = candleData[candleData.length - 1];
+        const updatedCandle = {
+            time: lastCandle.time,
+            open: lastCandle.open,
+            high: Math.max(lastCandle.high, price),
+            low: Math.min(lastCandle.low, price),
+            close: price,
+        };
+        candleData[candleData.length - 1] = updatedCandle;
+        candleSeries.update(updatedCandle);
+    }
+
+
+    // ========== UI UPDATES ==========
+    function updatePriceUI(newPrice) {
+        if (!newPrice || newPrice <= 0) return;
+        
+        const markPriceEl = document.getElementById('mark-price');
+        if (markPriceEl) {
+            if (state.currentPrice > 0) {
+                if (newPrice > state.currentPrice) {
+                    markPriceEl.classList.remove('flash-red');
+                    markPriceEl.classList.add('flash-green');
+                } else if (newPrice < state.currentPrice) {
+                    markPriceEl.classList.remove('flash-green');
+                    markPriceEl.classList.add('flash-red');
+                }
+            }
+            markPriceEl.textContent = formatPrice(newPrice);
+            markPriceEl.classList.remove('skeleton', 'skeleton-text');
+            markPriceEl.style.width = '';
+            setTimeout(() => markPriceEl.classList.remove('flash-green', 'flash-red'), 700);
+        }
+        
+        // Update 24h Change in header
+        const changeEl = document.getElementById('price-change');
+        if (changeEl && state.priceAt24hAgo > 0) {
+            const change = ((newPrice - state.priceAt24hAgo) / state.priceAt24hAgo) * 100;
+            changeEl.textContent = (change >= 0 ? '+' : '') + change.toFixed(2) + '%';
+            changeEl.className = 'market-bar__value market-bar__value--' + (change >= 0 ? 'positive' : 'negative');
+            changeEl.classList.remove('skeleton', 'skeleton-text');
+            changeEl.style.width = '';
+        }
+        
+        // Update 24h Volume in header (we track this from trade events)
+        const volEl = document.getElementById('volume-24h');
+        if (volEl) {
+            if (state.volume24h > 0) {
+                const vol = state.volume24h;
+                volEl.textContent = vol >= 1e6 ? '$' + (vol / 1e6).toFixed(1) + 'M' : vol >= 1e3 ? '$' + (vol / 1e3).toFixed(1) + 'K' : '$' + vol.toFixed(0);
+            } else {
+                volEl.textContent = '$0';
+            }
+            volEl.classList.remove('skeleton', 'skeleton-text');
+            volEl.style.width = '';
+        }
+        
+        state.oraclePrice = newPrice;
+        state.currentPrice = newPrice;
+        if (!state.walletAddress) renderMockOpenOrders();
+        
+        // Update the Oracle chart candle in real-time
+        if (state.chartSource === 'oracle') {
+            updateChartLastCandle(newPrice);
+        }
+    }
+
+    function updateSymbolUI() {
+        document.getElementById('token-symbol').textContent = state.tokenSymbol;
+        document.getElementById('token-logo').src = state.tokenLogo;
+        
+        // Update trade form suffix
+        // Update Order Book Headers
+        const obGrouping = document.getElementById('ob-symbol-grouping');
+        if (obGrouping) obGrouping.innerText = state.tokenSymbol;
+        document.querySelectorAll('.ob-symbol-label').forEach(el => el.innerText = state.tokenSymbol);
+        
+        // Reset pool address
+        state.poolAddress = null;
+    }
+
+
+    // ========== TOKEN MODAL & SEARCH ==========
+    function renderTokenList(tokensToRender) {
+        const listContainer = document.getElementById('token-list');
+        if (!listContainer) return;
+
+        if (tokensToRender.length === 0) {
+            listContainer.innerHTML = '<div class="token-list__loading">No tokens found</div>';
+            return;
+        }
+
+        listContainer.innerHTML = tokensToRender.slice(0, 100).map(t => `
+            <div class="token-item" data-address="${t.address}" data-symbol="${t.symbol}" data-logo="${t.logoURI}" data-decimals="${t.decimals}">
+                <img class="token-item__logo" src="${t.logoURI || ''}" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjOTBhMGFkIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+PGNpcmNsZSBjeD0iMTIiIGN5PSIxMiIgcj0iMTAiPjwvY2lyY2xlPjwvc3ZnPg=='" alt="${t.symbol}">
+                <div class="token-item__info">
+                    <span class="token-item__symbol">${t.symbol}</span>
+                    <span class="token-item__name">${t.name}</span>
+                </div>
+            </div>
+        `).join('');
+    }
+
+    function initTokenModal() {
+        const modal = document.getElementById('token-modal');
+        const trigger = document.getElementById('market-pair');
+        const closeBtn = document.getElementById('modal-close');
+        const searchInput = document.getElementById('token-search-input');
+        const listContainer = document.getElementById('token-list');
+
+        if (!modal || !trigger) return;
+
+        trigger.addEventListener('click', () => {
+            modal.classList.add('is-open');
+            searchInput.focus();
+        });
+
+        const closeModal = () => modal.classList.remove('is-open');
+        closeBtn.addEventListener('click', closeModal);
+        modal.addEventListener('click', (e) => {
+            if (e.target === modal) closeModal();
+        });
+
+        searchInput.addEventListener('input', (e) => {
+            const term = e.target.value.toLowerCase();
+            const filtered = state.tokens.filter(t => 
+                t.symbol.toLowerCase().includes(term) || t.name.toLowerCase().includes(term) || t.address === term
+            );
+            renderTokenList(filtered);
+        });
+
+        listContainer.addEventListener('click', async (e) => {
+            const item = e.target.closest('.token-item');
+            if (!item) return;
+
+            const address = item.dataset.address;
+            const symbol = item.dataset.symbol;
+            const logo = item.dataset.logo;
+            const decimals = parseInt(item.dataset.decimals) || 9;
+
+            if (address === state.tokenMint) {
+                closeModal();
+                return;
+            }
+
+            state.tokenMint = address;
+            state.tokenSymbol = symbol;
+            state.tokenLogo = logo;
+            state.tokenDecimals = decimals;
+            
+            closeModal();
+            updateSymbolUI();
+            
+            // --- Phase 5: Dynamic Market Creation ---
+            try {
+                await fetch(API_BASE + '/api/markets/create', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ base_mint: symbol, quote_mint: 'USDC' })
+                });
+                if (window.clobClient && window.clobClient.connected) {
+                    window.clobClient.getOrderbook();
+                }
+            } catch (e) {
+                console.error("Failed to create CLOB market:", e);
+            }
+            // ----------------------------------------
+            
+            // Re-fetch data
+            await fetchRealPrice();
+            await fetchPoolAddress();
+            
+            initChart(); 
+            fetchRecentTrades();
+            
+            // Reset input and fetch quote
+            document.getElementById('amount-input').value = '';
+            fetchQuote();
+        });
+    }
+
+    // ========== BOTTOM TABS ==========
+    function initBottomTabs() {
+        const tabContainer = document.getElementById('bottom-tabs');
+        if (!tabContainer) return;
+
+        tabContainer.addEventListener('click', (e) => {
+            const tab = e.target.closest('.btm-tab');
+            if (!tab) return;
+
+            tabContainer.querySelectorAll('.btm-tab').forEach(t => t.classList.remove('btm-tab--active'));
+            tab.classList.add('btm-tab--active');
+
+            const target = tab.dataset.tab;
+            document.querySelectorAll('.tab-pane').forEach(pane => pane.classList.remove('tab-pane--active'));
+            const pane = document.getElementById(`pane-${target}`);
+            if (pane) pane.classList.add('tab-pane--active');
+        });
+    }
+
+
+    function applyChartTheme(isDark) {
+        if (!chart) return;
+
+        const bgColor        = isDark ? '#1a1b20' : '#ffffff';
+        const txtColor       = isDark ? '#94a3b8' : '#475569';
+        const gridColor      = isDark ? 'rgba(255, 255, 255, 0.04)' : 'rgba(0, 0, 0, 0.04)';
+        const borderColor    = isDark ? '#1e293b' : '#e2e8f0';
+        const crosshairColor = isDark ? 'rgba(255, 255, 255, 0.25)' : 'rgba(15, 17, 23, 0.25)';
+        const crosshairBg    = isDark ? '#22242a' : '#0f1117';
+
+        chart.applyOptions({
+            layout: {
+                background: { type: 'solid', color: bgColor },
+                textColor: txtColor,
+            },
+            grid: {
+                vertLines: { color: gridColor },
+                horzLines: { color: gridColor },
+            },
+            rightPriceScale: {
+                borderColor: borderColor,
+            },
+            timeScale: {
+                borderColor: borderColor,
+            },
+            crosshair: {
+                vertLine: { color: crosshairColor, labelBackgroundColor: crosshairBg },
+                horzLine: { color: crosshairColor, labelBackgroundColor: crosshairBg },
+            }
+        });
+    }
+
+
     // ========== BINANCE LIVE PRICE FEED ==========
     let binanceWs = null, binanceReconnectTimer = null, binancePingInterval = null;
     function startBinancePriceFeed() {
