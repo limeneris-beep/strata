@@ -3227,6 +3227,11 @@ body {
     </footer>
 
     <script>
+// ===== API CONFIGURATION =====
+// Set window.API_BASE to your backend server URL for public deployments.
+// Leave empty for local dev (same-origin).
+window.API_BASE = '';
+
 /* === clob.js (inlined) === */
 // clob.js — Strata CLOB WebSocket Client SDK
 // Connects to the off-chain matching engine via WebSocket
@@ -3237,8 +3242,8 @@ body {
 
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.host;
-    const MATCHING_ENGINE_WS = `${protocol}//${host}/ws`;
-    const MATCHING_ENGINE_REST = ''; // Use relative paths for REST API calls
+    const MATCHING_ENGINE_WS = window.API_BASE ? `${window.API_BASE.replace(/^http/, 'ws')}/ws` : `${protocol}//${host}/ws`;
+    const MATCHING_ENGINE_REST = window.API_BASE || ''; // Uses API_BASE when set, else relative
     const PROGRAM_ID = '36eQgdUktRDhxVZJt3hkPnjo8xkveATaRkuPbFRPybKv';
 
     // ─── WebSocket Connection Manager ──────────────────────────────
@@ -4173,6 +4178,11 @@ body {
         }, durationMs);
     }
 
+    // ========== API ENDPOINT CONFIGURATION ==========
+    // Set window.API_BASE at the top of the <script> block.
+    // Used by all fetch(), WebSocket, and CLOB SDK calls.
+    const API_BASE = window.API_BASE || '';
+
     // ========== UTILS ==========
     function randomBetween(min, max) {
         return Math.random() * (max - min) + min;
@@ -4308,7 +4318,7 @@ body {
     async function fetchRecentTrades() {
         try {
             // First try the engine's trade history
-            const res = await fetch('/api/trades/recent?limit=50');
+            const res = await fetch(API_BASE + '/api/trades/recent?limit=50');
             const data = await res.json();
             if (data.trades && data.trades.length > 0) {
                 renderEngineRecentTrades(data.trades);
@@ -4627,7 +4637,7 @@ body {
                 console.log('[feed] intents connecting...');
                 const poll = async () => {
                     try {
-                        const d = await fetch('/api/feed/intents').then(r => r.json());
+                        const d = await fetch(API_BASE + '/api/feed/intents').then(r => r.json());
                         console.log('[feed] intents push', d.bids?.length, 'bids');
                         push({ bids: d.bids, asks: d.asks });
                     } catch (e) { console.error('[feed] intents error', e); }
@@ -4647,7 +4657,7 @@ body {
                 console.log('[feed] mmOrders connecting...');
                 const poll = async () => {
                     try {
-                        const d = await fetch('/api/feed/mm-orders').then(r => r.json());
+                        const d = await fetch(API_BASE + '/api/feed/mm-orders').then(r => r.json());
                         console.log('[feed] mmOrders push', d.bids?.length, 'bids');
                         push({ bids: d.bids, asks: d.asks });
                     } catch (e) { console.error('[feed] mmOrders error', e); }
@@ -4667,7 +4677,7 @@ body {
                 console.log('[feed] onchain connecting...');
                 const poll = async () => {
                     try {
-                        const d = await fetch('/api/feed/onchain').then(r => r.json());
+                        const d = await fetch(API_BASE + '/api/feed/onchain').then(r => r.json());
                         console.log('[feed] onchain push', d.bids?.length, 'bids, mid=', d.midPrice);
                         push({ bids: d.bids, asks: d.asks });
                     } catch (e) { console.error('[feed] onchain error', e); }
@@ -5481,7 +5491,7 @@ body {
             
             // --- Phase 5: Dynamic Market Creation ---
             try {
-                await fetch('/api/markets/create', {
+                await fetch(API_BASE + '/api/markets/create', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ base_mint: symbol, quote_mint: 'USDC' })
@@ -5715,7 +5725,7 @@ body {
                 faucetBtn.disabled = true;
                 faucetBtn.textContent = '⏳ ...';
                 try {
-                    const res = await fetch('/api/faucet', {
+                    const res = await fetch(API_BASE + '/api/faucet', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ pubkey: state.walletAddress })
@@ -5846,7 +5856,7 @@ body {
         if (!pubkey) return;
         try {
             // Fetch real balances from the matching engine
-            const res = await fetch(`/api/balances/${pubkey}`);
+            const res = await fetch(API_BASE + `/api/balances/${pubkey}`);
             const data = await res.json();
 
             const baseAvail = (data.base?.available || 0) / 1e9; // SOL: 9 decimals
@@ -6056,7 +6066,7 @@ body {
             // MAX button
             document.getElementById('funding-max-label').onclick = async () => {
                 try {
-                    const res = await fetch(`/api/balances/${state.walletAddress}`);
+                    const res = await fetch(API_BASE + `/api/balances/${state.walletAddress}`);
                     const bal = await res.json();
                     const avail = isBase ? (bal.base?.available || 0) / 1e9 : (bal.quote?.available || 0) / 1e6;
                     document.getElementById('funding-amount').value = avail.toFixed(isBase ? 4 : 2);
