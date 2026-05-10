@@ -716,6 +716,12 @@ body {
 .ob-colorkey__bar--mid   { background: rgba(52, 211, 153, 0.28); }
 .ob-colorkey__bar--light { background: rgba(52, 211, 153, 0.11); border: 1px solid rgba(52, 211, 153, 0.28); }
 
+/* Clickable liquidity toggles */
+.ob-colorkey__item { cursor: pointer; user-select: none; border-radius: 4px; padding: 2px 6px; transition: all 0.2s; position: relative; }
+.ob-colorkey__item:hover { background: var(--bg-tertiary); }
+.ob-colorkey__item--disabled .ob-colorkey__bar { opacity: 0.2; filter: grayscale(1); }
+.ob-colorkey__item--disabled { opacity: 0.4; text-decoration: line-through; }
+
 .ob-row__size, .ob-row__total {
     font-weight: 500;
     color: var(--text-secondary);
@@ -2735,16 +2741,16 @@ body {
             </div>
 
             <!-- COLOR KEY -->
-            <div class="ob-colorkey">
-                <div class="ob-colorkey__item">
+            <div class="ob-colorkey" id="ob-colorkey">
+                <div class="ob-colorkey__item" data-feed="intents" role="button" tabindex="0" title="Toggle Intents liquidity">
                     <span class="ob-colorkey__bar ob-colorkey__bar--light"></span>
                     Intents
                 </div>
-                <div class="ob-colorkey__item">
+                <div class="ob-colorkey__item" data-feed="mmOrders" role="button" tabindex="0" title="Toggle MM Orders liquidity">
                     <span class="ob-colorkey__bar ob-colorkey__bar--mid"></span>
                     MM Orders
                 </div>
-                <div class="ob-colorkey__item">
+                <div class="ob-colorkey__item" data-feed="onchain" role="button" tabindex="0" title="Toggle On-chain liquidity">
                     <span class="ob-colorkey__bar ob-colorkey__bar--dark"></span>
                     On-chain
                 </div>
@@ -4088,6 +4094,7 @@ window.API_BASE = 'https://733b23ff6b43abfe-49-145-104-158.serveousercontent.com
         quoteTimeout: null,
         chartSource: 'oracle', // 'oracle' or 'mark'
         resolution: '15', // Default 15m timeframe
+        activeFeeds: { intents: true, mmOrders: true, onchain: true },
         // Mark chart: candle state built from real-time OB mid-prices
         markCandles: [],
         markCurrentCandle: null,
@@ -4573,6 +4580,39 @@ window.API_BASE = 'https://733b23ff6b43abfe-49-145-104-158.serveousercontent.com
         });
     }
 
+    function initLiquidityToggles() {
+        const container = document.getElementById('ob-colorkey');
+        if (!container) return;
+
+        // Set initial active state on all items
+        container.querySelectorAll('.ob-colorkey__item').forEach(item => {
+            const feed = item.dataset.feed;
+            if (!state.activeFeeds[feed]) {
+                item.classList.add('ob-colorkey__item--disabled');
+            }
+        });
+
+        container.addEventListener('click', (e) => {
+            const item = e.target.closest('.ob-colorkey__item');
+            if (!item) return;
+            const feed = item.dataset.feed;
+            if (!feed) return;
+
+            // Toggle
+            state.activeFeeds[feed] = !state.activeFeeds[feed];
+
+            // Update visual
+            if (state.activeFeeds[feed]) {
+                item.classList.remove('ob-colorkey__item--disabled');
+            } else {
+                item.classList.add('ob-colorkey__item--disabled');
+            }
+
+            // Re-render order book with updated filter
+            if (_aggregator) _aggregator._render();
+        });
+    }
+
     // ================================================================
     //  LIQUIDITY SOURCE ADAPTERS
     // ================================================================
@@ -4702,6 +4742,7 @@ window.API_BASE = 'https://733b23ff6b43abfe-49-145-104-158.serveousercontent.com
         injectMockBatch(updates) {
             for (const [key, data] of Object.entries(updates)) {
                 if (!this._hasRealData.has(key)) this._latest[key] = data;
+                if (!state.activeFeeds[key]) this._latest[key] = null; // clear disabled feeds
             }
             this._render();
         }
@@ -4720,6 +4761,7 @@ window.API_BASE = 'https://733b23ff6b43abfe-49-145-104-158.serveousercontent.com
                 const map = new Map(); // priceKey → { price, intents, mmOrders, onchain }
                 for (const [srcKey, book] of Object.entries(this._latest)) {
                     if (!book) continue;
+                    if (!state.activeFeeds[srcKey]) continue; // skip disabled feeds
                     for (const lvl of (book[sideKey] || [])) {
                         const bp = this._bucket(lvl.price);
                         const k  = bp.toFixed(6);
@@ -6268,6 +6310,7 @@ window.API_BASE = 'https://733b23ff6b43abfe-49-145-104-158.serveousercontent.com
         initThemeToggle();
         initWalletIntegration();
         initOrderbookTabs();
+        initLiquidityToggles();
         initEngineStatus();
         initDepositWithdraw();
         initOrderTypes();
