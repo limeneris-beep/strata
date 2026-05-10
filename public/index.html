@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Strata — The Three-Layer Order Book DEX on Solana</title>
+    <meta name="description" content="Strata is a next-gen Solana DEX with a three-layer order book: real limit orders, intent-based MM depth, and virtualized AMM liquidity. Every trade fills. There's always one more layer.">
+    <meta property="og:title" content="Strata — The Three-Layer Order Book DEX">
+    <meta property="og:description" content="Real orders, intent-based MM liquidity, and virtualized AMM depth — all on one unified book. Built on Solana. There's always one more layer.">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        :root {
+            --bg: #07080c; --bg-card: #0e1118; --bg-card-hover: #141822;
+            --bg-elevated: #161b26; --border: #1c202c; --border-hover: #2a3040;
+            --text: #f4f2ed; --text-secondary: #a8a49c; --text-muted: #5c5950;
+            --green: #2ef2cc; --green-dim: rgba(46,242,204,0.12); --green-glow: rgba(46,242,204,0.30);
+            --blue: #5e9eff; --blue-dim: rgba(94,158,255,0.12);
+            --purple: #a78bfa; --purple-dim: rgba(167,139,250,0.12);
+            --red: #ff5c72; --red-dim: rgba(255,92,114,0.12);
+            --gold: #f5c842; --gold-dim: rgba(245,200,66,0.12); --gold-glow: rgba(245,200,66,0.25);
+            --radius: 12px; --radius-sm: 8px; --max-width: 1100px;
+            --layer-green: #2ef2cc; --layer-gold: #f5c842; --layer-blue: #5e9eff;
+        }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: 'Manrope', -apple-system, sans-serif;
+            background: var(--bg); color: var(--text);
+            line-height: 1.6; -webkit-font-smoothing: antialiased;
+        }
+
+        /* NAV */
+        .nav {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+            backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            background: rgba(7,8,12,0.82); border-bottom: 1px solid var(--border);
+        }
+        .nav-inner {
+            max-width: var(--max-width); margin: 0 auto;
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 16px 24px;
+        }
+        .nav-logo {
+            display: flex; align-items: center; gap: 10px;
+            text-decoration: none; color: var(--text);
+            font-size: 20px; font-weight: 700; letter-spacing: -0.5px;
+        }
+        .nav-logo-icon {
+            width: 28px; height: 28px; border-radius: 5px;
+            background: linear-gradient(180deg,
+                rgba(46,242,204,0.6) 0%, rgba(46,242,204,0.4) 33%,
+                rgba(94,158,255,0.4) 33%, rgba(94,158,255,0.25) 66%,
+                rgba(180,180,200,0.15) 66%, rgba(180,180,200,0.08) 100%);
+        }
+        .nav-links { display: flex; gap: 28px; align-items: center; }
+        .nav-links a {
+            color: var(--text-secondary); text-decoration: none;
+            font-size: 14px; font-weight: 500; transition: color 0.2s;
+        }
+        .nav-links a:hover { color: var(--text); }
+        .btn {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 10px 20px; border-radius: var(--radius-sm);
+            font-family: 'Manrope', sans-serif; font-size: 14px; font-weight: 600;
+            cursor: pointer; transition: all 0.2s; border: none;
+            text-decoration: none; white-space: nowrap;
+        }
+        .btn-primary { background: var(--green); color: #07080c; }
+        .btn-primary:hover { background: #5cf5d8; transform: translateY(-1px); box-shadow: 0 4px 24px var(--green-glow); }
+        .btn-outline { background: transparent; color: var(--text); border: 1px solid var(--border-hover); }
+        .btn-outline:hover { border-color: var(--text-muted); background: rgba(255,255,255,0.02); }
+
+        /* SECTIONS */
+        section { padding: 100px 24px; }
+        .section-inner { max-width: var(--max-width); margin: 0 auto; }
+        .section-label {
+            font-size: 12px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 2px; color: var(--green); margin-bottom: 16px;
+        }
+        .section-title {
+            font-size: clamp(28px, 4vw, 44px); font-weight: 700;
+            letter-spacing: -1px; line-height: 1.15; margin-bottom: 20px;
+        }
+        .section-subtitle {
+            font-size: 17px; color: var(--text-secondary);
+            max-width: 580px; line-height: 1.6;
+        }
+
+        /* HERO */
+        .hero {
+            padding: 180px 24px 120px; position: relative; overflow: hidden;
+        }
+        .hero::before {
+            content: ''; position: absolute; top: -30%; left: -15%;
+            width: 70%; height: 130%;
+            background: radial-gradient(ellipse at 50% 45%, rgba(46,242,204,0.10) 0%, transparent 65%);
+            pointer-events: none;
+        }
+        .hero-inner { max-width: var(--max-width); margin: 0 auto; position: relative; z-index: 1; }
+        .hero-badge {
+            display: inline-flex; align-items: center; gap: 8px;
+            padding: 6px 14px; border-radius: 100px;
+            background: var(--green-dim); border: 1px solid rgba(46,242,204,0.25);
+            font-size: 13px; font-weight: 600; color: var(--green); margin-bottom: 28px;
+        }
+        .hero-badge .dot {
+            width: 6px; height: 6px; border-radius: 50%;
+            background: var(--green); animation: pulse-dot 2s infinite;
+        }
+        @keyframes pulse-dot { 0%,100%{opacity:1} 50%{opacity:0.3} }
+        .hero-title {
+            font-size: clamp(40px, 6vw, 68px); font-weight: 700;
+            letter-spacing: -2px; line-height: 1.05; margin-bottom: 24px;
+        }
+        .hero-title .hl-green { color: var(--green); }
+        .hero-desc {
+            font-size: 18px; color: var(--text-secondary);
+            max-width: 600px; line-height: 1.65; margin-bottom: 36px;
+        }
+        .hero-buttons { display: flex; gap: 12px; flex-wrap: wrap; }
+
+        /* STATS ROW */
+        .stats-row {
+            display: flex; gap: 40px; margin-top: 48px; flex-wrap: wrap;
+        }
+        .stat-item { text-align: left; }
+        .stat-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 28px; font-weight: 600; color: var(--green);
+        }
+        .stat-label { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+
+        /* COMPARISON TABLE */
+        .comp-table {
+            margin-top: 48px; border-radius: var(--radius);
+            overflow: hidden; border: 1px solid var(--border);
+        }
+        .comp-row {
+            display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr;
+            padding: 14px 24px; font-size: 14px;
+            border-bottom: 1px solid var(--border);
+            background: var(--bg-card);
+        }
+        .comp-row:last-child { border-bottom: none; }
+        .comp-row.header {
+            background: var(--bg-elevated); font-weight: 700;
+            color: var(--text-muted); font-size: 12px; text-transform: uppercase; letter-spacing: 1px;
+        }
+        .comp-row .hl { color: var(--green); font-weight: 600; }
+        .comp-check { color: var(--green); }
+        .comp-cross { color: var(--text-muted); }
+
+        /* LAYER CARDS */
+        .layers-stack {
+            display: flex; flex-direction: column; gap: 16px; margin-top: 48px;
+        }
+        .layer-card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 32px;
+            display: flex; gap: 28px; align-items: flex-start;
+        }
+        .layer-num {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px; font-weight: 600; color: var(--text-muted);
+            min-width: 40px; padding-top: 2px;
+        }
+        .layer-content { flex: 1; }
+        .layer-content h3 { font-size: 20px; font-weight: 700; margin-bottom: 8px; letter-spacing: -0.3px; }
+        .layer-content p { font-size: 15px; color: var(--text-secondary); line-height: 1.65; }
+        .layer-tag {
+            display: inline-block; padding: 3px 10px; border-radius: 4px;
+            font-size: 11px; font-weight: 600; margin-bottom: 10px;
+        }
+        .layer-card:nth-child(1) .layer-tag { background: var(--green-dim); color: var(--green); }
+        .layer-card:nth-child(2) .layer-tag { background: var(--gold-dim); color: var(--gold); }
+        .layer-card:nth-child(3) .layer-tag { background: rgba(94,158,255,0.12); color: var(--blue); }
+
+        /* PRODUCT CARDS */
+        .product-grid {
+            display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin-top: 48px;
+        }
+        .product-card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 32px;
+            transition: border-color 0.2s, transform 0.2s;
+        }
+        .product-card:hover { border-color: var(--border-hover); transform: translateY(-2px); }
+        .product-card h3 { font-size: 18px; font-weight: 700; margin-bottom: 10px; letter-spacing: -0.3px; }
+        .product-card p { font-size: 14px; color: var(--text-secondary); line-height: 1.65; }
+        .product-icon {
+            width: 40px; height: 40px; border-radius: var(--radius-sm);
+            display: flex; align-items: center; justify-content: center;
+            margin-bottom: 16px; font-size: 20px;
+        }
+
+        /* ROADMAP */
+        .roadmap-list {
+            display: flex; flex-direction: column; gap: 20px; margin-top: 48px;
+        }
+        .roadmap-item {
+            display: flex; gap: 24px; align-items: baseline;
+            padding: 24px; background: var(--bg-card);
+            border: 1px solid var(--border); border-radius: var(--radius);
+        }
+        .roadmap-item .time {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px; font-weight: 600; color: var(--green);
+            min-width: 110px; white-space: nowrap;
+        }
+        .roadmap-item.done .time { color: var(--text-muted); }
+        .roadmap-item .milestone { font-weight: 700; font-size: 16px; margin-bottom: 4px; }
+        .roadmap-item .detail { font-size: 14px; color: var(--text-secondary); }
+        .roadmap-item.done .milestone { color: var(--text-muted); }
+
+        /* FOOTER */
+        footer {
+            border-top: 1px solid var(--border); padding: 40px 24px; text-align: center;
+        }
+        .footer-inner {
+            max-width: var(--max-width); margin: 0 auto;
+            display: flex; justify-content: space-between; align-items: center;
+            flex-wrap: wrap; gap: 16px;
+        }
+        .footer-links { display: flex; gap: 24px; }
+        .footer-links a { color: var(--text-muted); text-decoration: none; font-size: 13px; transition: color 0.2s; }
+        .footer-links a:hover { color: var(--text); }
+        .footer-copy { font-size: 13px; color: var(--text-muted); }
+
+        /* BSV */
+        .book-visual {
+            margin-top: 48px; background: var(--bg-card);
+            border: 1px solid var(--border); border-radius: var(--radius);
+            padding: 20px 24px; max-width: 580px;
+        }
+        .book-visual-label {
+            font-size: 11px; font-weight: 700; text-transform: uppercase;
+            letter-spacing: 1.5px; color: var(--text-muted); margin-bottom: 14px;
+        }
+        .bv-row { display: flex; align-items: center; gap: 8px; padding: 3px 0; }
+        .bv-price {
+            width: 72px; font-family: 'JetBrains Mono', monospace;
+            font-size: 12px; color: var(--red);
+        }
+        .bv-price.bid { color: var(--green); }
+        .bv-size {
+            width: 50px; text-align: right;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px; color: var(--text-secondary);
+        }
+        .bv-bar-wrap { flex: 1; height: 14px; position: relative; }
+        .bv-bar {
+            height: 100%; border-radius: 2px; display: flex;
+            overflow: hidden; position: absolute; top: 0; left: 0;
+        }
+        .bv-seg { height: 100%; min-width: 1px; }
+        .bv-seg.real { background: rgba(255,92,114,0.50); }
+        .bv-seg.intent { background: rgba(245,200,66,0.50); }
+        .bv-seg.avl { background: rgba(180,180,200,0.12); }
+        .bv-seg.rbid { background: rgba(46,242,204,0.55); }
+        .bv-spread {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 10px 0; margin: 6px 0;
+            border-top: 1px solid var(--border); border-bottom: 1px solid var(--border);
+            font-family: 'JetBrains Mono', monospace; font-size: 12px;
+        }
+        .bv-spread .mid { color: var(--text); font-weight: 600; }
+        .bv-spread .spct {
+            font-size: 10px; padding: 2px 6px; border-radius: 3px;
+            background: rgba(46,242,204,0.12); color: var(--green);
+        }
+        .bv-legend {
+            display: flex; gap: 16px; padding-top: 12px;
+            font-size: 11px; color: var(--text-muted);
+        }
+        .bv-legend span { display: flex; align-items: center; gap: 6px; }
+        .bv-swatch {
+            width: 10px; height: 10px; border-radius: 2px;
+        }
+        .bv-swatch.r { background: rgba(255,92,114,0.50); }
+        .bv-swatch.i { background: rgba(245,200,66,0.50); }
+        .bv-swatch.a { background: rgba(180,180,200,0.12); border: 1px solid rgba(180,180,200,0.2); }
+        .bv-swatch.rb { background: rgba(46,242,204,0.55); }
+
+        /* STEP CARDS */
+        .steps-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; margin-top: 48px; }
+        .step-card {
+            background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: var(--radius); padding: 32px;
+            transition: border-color 0.2s, transform 0.2s;
+        }
+        .step-card:hover { border-color: var(--border-hover); transform: translateY(-2px); }
+        .step-num {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px; font-weight: 600; margin-bottom: 14px;
+        }
+        .step-card:nth-child(1) .step-num { color: var(--green); }
+        .step-card:nth-child(2) .step-num { color: var(--gold); }
+        .step-card:nth-child(3) .step-num { color: var(--blue); }
+        .step-card h3 { font-size: 18px; font-weight: 700; margin-bottom: 10px; }
+        .step-card p { font-size: 14px; color: var(--text-secondary); line-height: 1.6; }
+
+        .tagline-bar {
+            text-align: center; padding: 28px 24px;
+            background: var(--bg-card); border-top: 1px solid var(--border);
+            border-bottom: 1px solid var(--border);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px; color: var(--text-muted);
+        }
+        .tagline-bar strong { color: var(--green); font-weight: 600; }
+
+        @media (max-width: 768px) {
+            .stats-row { gap: 24px; }
+            .comp-row { grid-template-columns: 1.2fr 0.8fr 0.8fr 0.8fr 0.8fr; font-size: 12px; padding: 10px 14px; }
+            .comp-row.header { font-size: 10px; }
+            .layer-card { flex-direction: column; gap: 12px; }
+            .product-grid { grid-template-columns: 1fr; }
+            .steps-grid { grid-template-columns: 1fr; }
+            .roadmap-item { flex-direction: column; gap: 8px; }
+            .hero-title { font-size: 36px; letter-spacing: -1px; }
+            .nav-links a:not(.btn) { display: none; }
+        }
+    </style>
+</head>
+<body>
+
+<nav class="nav">
+    <div class="nav-inner">
+        <a href="#" class="nav-logo">
+            <div class="nav-logo-icon"></div>
+            Strata
+        </a>
+        <div class="nav-links">
+            <a href="#why">Why</a>
+            <a href="#layers">Layers</a>
+            <a href="#beyond">Beyond Spot</a>
+            <a href="#roadmap">Roadmap</a>
+            <a href="https://github.com/limeneris-beep/acend" class="btn btn-outline">GitHub</a>
+        </div>
+    </div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+    <div class="hero-inner">
+        <div class="hero-badge"><span class="dot"></span> Live on Solana devnet</div>
+        <h1 class="hero-title">
+            All liquidity.<br>
+            <span class="hl-green">Every layer.</span>
+        </h1>
+        <p class="hero-desc">
+            Strata is a three-layer order book DEX on Solana. Real limit orders, intent-based market maker depth, and virtualized AMM liquidity — unified into one book where every trade fills.
+        </p>
+        <div class="hero-buttons">
+            <a href="#layers" class="btn btn-primary">See the Layers</a>
+            <a href="https://github.com/limeneris-beep/acend" class="btn btn-outline">View on GitHub</a>
+        </div>
+
+        <div class="stats-row">
+            <div class="stat-item">
+                <div class="stat-value">$1.6T</div>
+                <div class="stat-label">Solana DEX volume in 2025</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">0</div>
+                <div class="stat-label">DEXes with a real order book UX</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-value">3</div>
+                <div class="stat-label">Liquidity layers, one unified book</div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<div class="tagline-bar">There's always <strong>one more layer</strong>.</div>
+
+<!-- WHY -->
+<section id="why">
+    <div class="section-inner">
+        <div class="section-label">Why Strata</div>
+        <h2 class="section-title">Solana has the volume.<br>It doesn't have a real exchange.</h2>
+        <p class="section-subtitle">
+            $1.6 trillion in on-chain spot volume in 2025 — ahead of Coinbase, Bybit, and Bitget. Behind only Binance. SOL/USDC on-chain volume has out-traded the top two CEXes combined since September 2025.
+        </p>
+        <p class="section-subtitle" style="margin-top:16px;">
+            Yet there are <strong>zero Solana DEXes</strong> with a professional order book experience. AMMs hide liquidity behind swap widgets. Phoenix and OpenBook need paid market makers to bootstrap every market. Pros stay on Binance.
+        </p>
+        <p class="section-subtitle" style="margin-top:16px;">
+            Strata doesn't wait for liquidity to arrive. It pulls existing AMM depth from across Solana and renders it as visible order book depth. <strong>The volume is here. Now the order book is too.</strong>
+        </p>
+
+        <div class="comp-table">
+            <div class="comp-row header"><span></span><span>Strata</span><span>Jupiter</span><span>Phoenix</span><span>Binance</span></div>
+            <div class="comp-row"><span>Order book UI</span><span class="comp-check">✓</span><span class="comp-cross">✗</span><span class="comp-check">✓</span><span class="comp-cross">✗</span></div>
+            <div class="comp-row"><span>Limit / Post-only</span><span class="comp-check">✓</span><span>Partial</span><span class="comp-check">✓</span><span class="comp-check">✓</span></div>
+            <div class="comp-row"><span>Deep day-one</span><span class="comp-check">✓</span><span class="comp-cross">—</span><span class="comp-cross">✗</span><span>N/A</span></div>
+            <div class="comp-row"><span>Self-custody</span><span class="comp-check">✓</span><span class="comp-check">✓</span><span class="comp-check">✓</span><span class="comp-cross">✗</span></div>
+            <div class="comp-row"><span>Permissionless pairs</span><span class="comp-check">✓</span><span class="comp-check">✓</span><span class="comp-check">✓</span><span>N/A</span></div>
+            <div class="comp-row"><span>No paid MM needed</span><span class="comp-check">✓</span><span>N/A</span><span class="comp-cross">✗</span><span>N/A</span></div>
+        </div>
+    </div>
+</section>
+
+<!-- THE LAYERS -->
+<section id="layers" style="padding-top:40px;">
+    <div class="section-inner">
+        <div class="section-label">The Layers</div>
+        <h2 class="section-title">Three sources of liquidity.<br>One unified book.</h2>
+
+        <div class="layers-stack">
+            <div class="layer-card" style="border-left: 3px solid var(--green);">
+                <div class="layer-num">01</div>
+                <div class="layer-content">
+                    <div class="layer-tag">Highest Priority</div>
+                    <h3>Real Limit Orders</h3>
+                    <p>User limit orders escrowed in on-chain UserVault PDAs. Hard commitment — funds are locked. Settle immediately when matched. GTC, IOC, FOK, Post-Only. Green and red bars on the book. Price-time priority.</p>
+                </div>
+            </div>
+            <div class="layer-card" style="border-left: 3px solid var(--gold);">
+                <div class="layer-num">02</div>
+                <div class="layer-content">
+                    <div class="layer-tag">Medium Priority</div>
+                    <h3>Intent Orders</h3>
+                    <p>Trusted market makers post soft RFQ-based commitments visible in gold. When a taker hits that level, the matching engine sends a parallel RFQ to all MMs. First responder fills. Non-responders are penalized via on-chain reputation. MMs profit by quoting tighter than AVL — hedge cost ≈ 0.</p>
+                </div>
+            </div>
+            <div class="layer-card" style="border-left: 3px solid var(--blue);">
+                <div class="layer-num">03</div>
+                <div class="layer-content">
+                    <div class="layer-tag">Fallback — Guaranteed Fill</div>
+                    <h3>AVL — Aggregated Virtualized Liquidity</h3>
+                    <p>Jupiter/AMM mirrored depth displayed as translucent bars. The Depth Sampler continuously polls Jupiter to map available liquidity at every price level. When hit, a fresh quote is fetched and executed in a single atomic Solana transaction via CPI. No funds move until execution. The book is <strong>never empty</strong>.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="book-visual">
+            <div class="book-visual-label">SOL/USDC — Live Order Book Preview</div>
+            <div class="bv-row"><span class="bv-price">$150.85</span><span class="bv-size">185</span><div class="bv-bar-wrap"><div class="bv-bar" style="width:100%"><div class="bv-seg real" style="width:8%"></div><div class="bv-seg intent" style="width:22%"></div><div class="bv-seg avl" style="width:70%"></div></div></div></div>
+            <div class="bv-row"><span class="bv-price">$150.55</span><span class="bv-size">125</span><div class="bv-bar-wrap"><div class="bv-bar" style="width:68%"><div class="bv-seg real" style="width:12%"></div><div class="bv-seg intent" style="width:28%"></div><div class="bv-seg avl" style="width:60%"></div></div></div></div>
+            <div class="bv-row"><span class="bv-price">$150.30</span><span class="bv-size">80</span><div class="bv-bar-wrap"><div class="bv-bar" style="width:40%"><div class="bv-seg real" style="width:22%"></div><div class="bv-seg intent" style="width:35%"></div><div class="bv-seg avl" style="width:43%"></div></div></div></div>
+            <div class="bv-row"><span class="bv-price">$150.12</span><span class="bv-size">40</span><div class="bv-bar-wrap"><div class="bv-bar" style="width:18%"><div class="bv-seg real" style="width:50%"></div><div class="bv-seg intent" style="width:50%"></div></div></div></div>
+            <div class="bv-spread"><span>Spread: 0.03%</span><span class="mid">$150.09</span><span class="spct">40+ levels</span></div>
+            <div class="bv-row"><span class="bv-price bid">$150.05</span><span class="bv-size">35</span><div class="bv-bar-wrap"><div class="bv-bar" style="width:15%"><div class="bv-seg rbid" style="width:70%"></div><div class="bv-seg intent" style="width:30%"></div></div></div></div>
+            <div class="bv-row"><span class="bv-price bid">$149.88</span><span class="bv-size">70</span><div class="bv-bar-wrap"><div class="bv-bar" style="width:32%"><div class="bv-seg rbid" style="width:25%"></div><div class="bv-seg intent" style="width:35%"></div><div class="bv-seg avl" style="width:40%"></div></div></div></div>
+            <div class="bv-row"><span class="bv-price bid">$149.60</span><span class="bv-size">120</span><div class="bv-bar-wrap"><div class="bv-bar" style="width:55%"><div class="bv-seg rbid" style="width:15%"></div><div class="bv-seg intent" style="width:25%"></div><div class="bv-seg avl" style="width:60%"></div></div></div></div>
+            <div class="bv-row"><span class="bv-price bid">$149.25</span><span class="bv-size">210</span><div class="bv-bar-wrap"><div class="bv-bar" style="width:100%"><div class="bv-seg rbid" style="width:5%"></div><div class="bv-seg avl" style="width:95%"></div></div></div></div>
+            <div class="bv-legend">
+                <span><div class="bv-swatch r"></div> Real Orders</span>
+                <span><div class="bv-swatch i"></div> Intent Orders</span>
+                <span><div class="bv-swatch a"></div> AVL Depth</span>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section style="padding-top:40px;">
+    <div class="section-inner">
+        <div class="steps-grid">
+            <div class="step-card">
+                <div class="step-num">01 — SAMPLE</div>
+                <h3>Map the curve</h3>
+                <p>Depth Sampler calls Jupiter across 12 size increments to map available AMM liquidity at every price level — 40-60 virtual levels per side.</p>
+            </div>
+            <div class="step-card">
+                <div class="step-num">02 — MATCH</div>
+                <h3>Waterfall fill</h3>
+                <p>Every taker order routes through priority. Real orders fill first, then intent RFQ, then AVL fallback — guaranteeing 100% fill, every time.</p>
+            </div>
+            <div class="step-card">
+                <div class="step-num">03 — SETTLE</div>
+                <h3>Atomic on-chain</h3>
+                <p>Single Solana transaction via Jupiter CPI. Price guard reverts if execution deviates beyond slippage tolerance. All or nothing.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- STRUCTURAL EDGE -->
+<section style="padding-top:40px;">
+    <div class="section-inner">
+        <div class="section-label">Structural Edge</div>
+        <h2 class="section-title">We don't pay market makers.<br>They quote anyway.</h2>
+        <p class="section-subtitle">
+            Traditional CLOBs spend $1M+/year per pair on MM rebates, taker subsidies, and token incentives. Strata doesn't need to. AMM depth is already on the book — market makers aren't building from scratch. They capture spread inside a pre-quoted curve. Hedge cost ≈ 0. Same AMMs, same chain.
+        </p>
+        <p class="section-subtitle" style="margin-top:16px;">
+            <strong>Deep books without paid MM programs. Structural, not promotional.</strong>
+        </p>
+    </div>
+</section>
+
+<!-- BEYOND SPOT -->
+<section id="beyond">
+    <div class="section-inner">
+        <div class="section-label">Beyond Spot</div>
+        <h2 class="section-title">Financial primitives built<br>on visible depth.</h2>
+        <p class="section-subtitle">
+            Visible depth isn't just a UX feature. It's an ingredient for entirely new financial products — ones that can only exist when liquidity is transparent and programmatic.
+        </p>
+
+        <div class="product-grid">
+            <div class="product-card">
+                <div class="product-icon" style="background:var(--gold-dim);color:var(--gold);">🎲</div>
+                <h3>Liquidity Prediction Markets</h3>
+                <p>"Will there be >500 SOL of depth at $150 in the next hour?" Bet on the book itself. Predictions feed back into depth — more bets create more informed liquidity. The book becomes self-aware.</p>
+            </div>
+            <div class="product-card">
+                <div class="product-icon" style="background:var(--green-dim);color:var(--green);">💸</div>
+                <h3>Yield-Bearing Limit Orders</h3>
+                <p>Resting orders earn option premium while they wait. Locked capital works across protocols — the order stays available, the maker collects yield. Every limit order becomes a dual-purpose position.</p>
+            </div>
+            <div class="product-card">
+                <div class="product-icon" style="background:var(--red-dim);color:var(--red);">⌛</div>
+                <h3>Ultra-Short Options</h3>
+                <p>Calls and puts with 30-min to 4-hour expiries displayed inline alongside spot orders. Spot and derivatives in one interface — not two products. If you can see the book, you can bet on where it's going.</p>
+            </div>
+            <div class="product-card">
+                <div class="product-icon" style="background:var(--blue-dim);color:var(--blue);">📊</div>
+                <h3>Concentrated Liquidity Ranges</h3>
+                <p>Stake collateral into a price range with leverage — $1K represents $3-5K of depth. Ranges slot into the book alongside real orders. No bot, no RPC nodes, no impermanent loss. Just spread capture.</p>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ROADMAP -->
+<section id="roadmap">
+    <div class="section-inner">
+        <div class="section-label">Roadmap</div>
+        <h2 class="section-title">From devnet today to<br>PvP liquidity markets.</h2>
+
+        <div class="roadmap-list">
+            <div class="roadmap-item done">
+                <div class="time">Summer 2026 ✓</div>
+                <div>
+                    <div class="milestone">Devnet Live</div>
+                    <div class="detail">Two-layer CLOB working. Real Orders + AVL operational. Pro trading terminal complete. Matching engine with balance validation. 40+ levels of visible depth.</div>
+                </div>
+            </div>
+            <div class="roadmap-item">
+                <div class="time">Late Q3 2026</div>
+                <div><div class="milestone">Mainnet Alpha</div><div class="detail">Audit, deploy SOL/USDC + 5 majors, KYB-light onboarding for early users.</div></div>
+            </div>
+            <div class="roadmap-item">
+                <div class="time">Q4 2026</div>
+                <div><div class="milestone">MM Intents v3</div><div class="detail">RFQ engine, MM onboarding, market creation tools. First paid market makers live.</div></div>
+            </div>
+            <div class="roadmap-item">
+                <div class="time">Q1 2027</div>
+                <div><div class="milestone">Permissionless Pairs</div><div class="detail">Public pair creation. Token launch partnership program. 5% creator fee active.</div></div>
+            </div>
+            <div class="roadmap-item">
+                <div class="time">Q2 2027</div>
+                <div><div class="milestone">Yield-Bearing Orders</div><div class="detail">Resting orders earn option premium. First cross-protocol integration with lending markets.</div></div>
+            </div>
+            <div class="roadmap-item">
+                <div class="time">Late 2027</div>
+                <div><div class="milestone">Options + Predictions</div><div class="detail">Ultra-short options embedded in the book. Liquidity prediction markets. Full PvP layer activates.</div></div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<footer>
+    <div class="footer-inner">
+        <div class="footer-copy">Strata &copy; 2026</div>
+        <div class="footer-links">
+            <a href="https://stratabook.org">stratabook.org</a>
+            <a href="https://github.com/limeneris-beep/acend">GitHub</a>
+            <a href="https://x.com">Twitter</a>
+        </div>
+    </div>
+</footer>
+
+</body>
+</html>
