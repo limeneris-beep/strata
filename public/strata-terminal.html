@@ -4737,29 +4737,46 @@ window.API_BASE = 'https://733b23ff6b43abfe-49-145-104-158.serveousercontent.com
         }
 
         _render() {
-            // Merge per-source books into the format renderOrderbook() expects:
-            //   { price, size, sizeOnChain, sizeRFQ }
-            //   sizeOnChain  = mmOrders contribution  → mid bar  (ob-row__depth-onchain)
-            //   sizeRFQ      = onchain  contribution  → dark bar (ob-row__depth-rfq)
-            //   implied rest = intents  contribution  → light bar (ob-row__depth-mm)
+            // Rank-based merge: sort each feed independently by price,
+            // then combine the Nth level from each feed into one row.
+            // This guarantees all three liquidity layers are visible
+            // even when feeds use different price grids.
             const mergeSide = (sideKey) => {
-                const map = new Map(); // priceKey → { price, intents, mmOrders, onchain }
+                // Collect sorted per-feed arrays (bids: high→low, asks: low→high)
+                const sources = {};
                 for (const [srcKey, book] of Object.entries(this._latest)) {
-                    if (!book) continue;
-                    for (const lvl of (book[sideKey] || [])) {
-                        const bp = this._bucket(lvl.price);
-                        const k  = bp.toFixed(6);
-                        if (!map.has(k)) map.set(k, { price: bp, intents: 0, mmOrders: 0, onchain: 0 });
-                        map.get(k)[srcKey] = (map.get(k)[srcKey] || 0) + lvl.size;
-                    }
+                    if (!book || !book[sideKey] || !book[sideKey].length) continue;
+                    sources[srcKey] = [...book[sideKey]].sort((a, b) =>
+                        sideKey === 'bids' ? b.price - a.price : a.price - b.price
+                    );
                 }
-                return Array.from(map.values()).map(({ price, intents, mmOrders, onchain }) => ({
-                    price,
-                    size:        intents + mmOrders + onchain,
-                    sizeOnChain: mmOrders,  // → mid bar
-                    sizeRFQ:     onchain,   // → dark bar
-                    // intents = size − sizeOnChain − sizeRFQ  → light bar (handled by normalize())
-                }));
+                const srcKeys = Object.keys(sources);
+                if (!srcKeys.length) return [];
+                const maxLen = Math.max(...srcKeys.map(k => sources[k].length));
+
+                const result = [];
+                for (let i = 0; i < maxLen; i++) {
+                    let intents = 0, mmOrders = 0, onchain = 0, priceW = 0, sizeW = 0;
+                    for (const key of srcKeys) {
+                        if (i >= sources[key].length) continue;
+                        const lvl = sources[key][i];
+                        const sz = lvl.size || 0;
+                        if (key === 'intents') intents = sz;
+                        else if (key === 'mmOrders') mmOrders = sz;
+                        else if (key === 'onchain') onchain = sz;
+                        priceW += lvl.price * sz;
+                        sizeW += sz;
+                    }
+                    const price = sizeW > 0 ? priceW / sizeW : 0;
+                    if (sizeW <= 0) continue;
+                    result.push({
+                        price,
+                        size:        intents + mmOrders + onchain,
+                        sizeOnChain: mmOrders,
+                        sizeRFQ:     onchain,
+                    });
+                }
+                return result;
             };
             renderOrderbook(mergeSide('bids'), mergeSide('asks'));
         }
