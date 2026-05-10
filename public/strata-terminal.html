@@ -2575,7 +2575,7 @@ body {
                 <a href="#" class="nav__link nav__link--active" id="nav-trade">Trade</a>
                 <a href="#" class="nav__link" id="nav-explorer">Explorer</a>
                 <a href="#" class="nav__link" id="nav-portfolio">Portfolio</a>
-                <a href="#" class="nav__link" id="nav-earn">Markets</a>
+                <a href="/" class="nav__link" id="nav-website">Website</a>
             </nav>
         </div>
         <div class="header__right">
@@ -6267,7 +6267,6 @@ window.API_BASE = 'https://733b23ff6b43abfe-49-145-104-158.serveousercontent.com
     function initNavigation() {
         const navTrade = document.getElementById('nav-trade');
         const navExplorer = document.getElementById('nav-explorer');
-        const navMarkets = document.getElementById('nav-earn');
         const mainContent = document.getElementById('main-content');
         const marketBar = document.getElementById('market-bar');
         const explorerView = document.getElementById('explorer-view');
@@ -6286,13 +6285,6 @@ window.API_BASE = 'https://733b23ff6b43abfe-49-145-104-158.serveousercontent.com
         if(navExplorer) navExplorer.addEventListener('click', (e) => {
             e.preventDefault();
             window.location.href = '/explorer';
-        });
-
-        if(navMarkets) navMarkets.addEventListener('click', (e) => {
-            e.preventDefault();
-            hideAllViews();
-            navMarkets.classList.add('nav__link--active');
-            if(marketsView) marketsView.style.display = 'block';
         });
 
         if(navTrade) navTrade.addEventListener('click', (e) => {
