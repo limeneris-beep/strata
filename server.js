@@ -870,8 +870,8 @@ const server = http.createServer(async (req, res) => {
   }
 
   // Static files
-  let filePath = path.join(PUBLIC_DIR, pathname === '/' ? 'acend-v6.html' : pathname);
-  if (!fs.existsSync(filePath)) filePath = path.join(PUBLIC_DIR, 'acend-v6.html');
+  let filePath = path.join(PUBLIC_DIR, pathname === '/' ? 'strata-terminal.html' : pathname);
+  if (!fs.existsSync(filePath)) filePath = path.join(PUBLIC_DIR, 'strata-terminal.html');
   serveFile(res, filePath);
 });
 

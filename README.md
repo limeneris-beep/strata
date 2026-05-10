@@ -114,7 +114,7 @@ Only Strata hits all six.
 ```
 ┌──────────────┐     ┌──────────────────┐     ┌─────────────┐
 │   Frontend   │────▶│  Matching Engine  │────▶│ Solana RPC  │
-│ (acend-v6)   │     │  (server.js)      │     │ (testnet)   │
+│ (strata-terminal)   │     │  (server.js)      │     │ (testnet)   │
 └──────────────┘     │                   │     └─────────────┘
                      │ • Order book view  │
 ┌──────────────┐     │ • Waterfall logic  │     ┌─────────────┐
@@ -285,7 +285,7 @@ In-house, product-specific AI agent that handles development management, code ge
 - **Liquidity:** Jupiter CPI, Raydium, Orca, Meteora
 - **Price Feeds:** Binance WebSocket, Pyth oracle
 - **Backend:** Node.js (Express + WebSocket), matching engine built in
-- **Frontend:** Vanilla JS (acend-v6.html), lightweight-charts, Phantom wallet
+- **Frontend:** Vanilla JS (strata-terminal.html), lightweight-charts, Phantom wallet
 - **AVL Pipeline:** Node.js with PCHIP interpolation + GMM extrapolation
 - **Agent Orchestration:** Hermes Agent + DeepSeek V4
 
