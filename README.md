@@ -149,7 +149,7 @@ Only Strata hits all six.
 ## Roadmap
 
 **Summer 2026** — Devnet live  
-Two-layer CLOB working. Real Orders + AVL operational. Pro trading terminal complete. ✅
+Three-layer CLOB working. Real Orders + Intent Orders + AVL operational. Pro trading terminal complete. ✅
 
 **Late Q3 2026** — Mainnet alpha  
 Audit, deploy SOL/USDC + 5 majors, KYB-light onboarding.
