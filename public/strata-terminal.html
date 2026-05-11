@@ -4722,7 +4722,7 @@ window.API_BASE = 'https://733b23ff6b43abfe-49-145-104-158.serveousercontent.com
     // ================================================================
     class LiquidityAggregator {
         // tickSize: price bucket (USD) used to align levels from different sources
-        constructor(feeds, tickSize = 1) {
+        constructor(feeds, tickSize = 0.01) {
             this._feeds       = feeds;
             this._tickSize    = tickSize;
             this._latest      = {};          // feedKey → { bids, asks }
