@@ -98,7 +98,7 @@ Only Strata hits all six.
 
 ## Features (Devnet Live)
 
-- ✅ **Two-layer order book** — Real orders + AVL, segmented depth bars
+- ✅ **Three-layer order book** — Real + Intent + AVL, segmented depth bars
 - ✅ **Live order management** — Limit, IOC, FOK, Post-Only
 - ✅ **Matching engine** — Built into server.js, balance-validated, real-time fills
 - ✅ **Pro trading terminal** — Candlestick chart (live Binance price feed), order book, trade form
@@ -265,11 +265,8 @@ No other DEX is building toward this.
 **Phizen** — Business · Strategy · Operations  
 Product direction, market strategy, partnerships, fundraising. Owns vision from positioning to GTM.
 
-**Kaiden** — Engineering · Architecture  
-Built the entire codebase: matching engine, Depth Sampler, on-chain Solana programs, frontend. Ships full-stack.
-
 **Hermes** — AI Agent Infrastructure  
-In-house, product-specific AI agent that handles development management, code generation, testing, and deployment. Force multiplier enabling a 2-person team to ship at the velocity of 8.
+In-house, product-specific AI agent that handles development management, code generation, testing, and deployment. Force multiplier enabling a solo engineer to ship at the velocity of a full team.
 
 ---
 
@@ -281,7 +278,7 @@ In-house, product-specific AI agent that handles development management, code ge
 
 ## Tech Stack
 
-- **Blockchain:** Solana (Anchor framework, testnet)
+- **Blockchain:** Solana (Anchor framework, devnet)
 - **Liquidity:** Jupiter CPI, Raydium, Orca, Meteora
 - **Price Feeds:** Binance WebSocket, Pyth oracle
 - **Backend:** Node.js (Express + WebSocket), matching engine built in
@@ -292,4 +289,4 @@ In-house, product-specific AI agent that handles development management, code ge
 ---
 
 *Built for the Colosseum Hackathon 2026. Seed stage.*  
-*Phizen & Kaiden · stratabook.org*
+*Phizen · stratabook.org*
