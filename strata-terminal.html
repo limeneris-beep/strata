@@ -2573,8 +2573,6 @@ body {
             </div>
             <nav class="nav" id="main-nav">
                 <a href="#" class="nav__link nav__link--active" id="nav-trade">Trade</a>
-                <a href="#" class="nav__link" id="nav-explorer">Explorer</a>
-                <a href="#" class="nav__link" id="nav-portfolio">Portfolio</a>
                 <a href="https://stratabook.org" class="nav__link" id="nav-website">Website</a>
             </nav>
         </div>
@@ -6293,13 +6291,12 @@ window.API_BASE = '';
 
     function initNavigation() {
         const navTrade = document.getElementById('nav-trade');
-        const navExplorer = document.getElementById('nav-explorer');
         const mainContent = document.getElementById('main-content');
         const marketBar = document.getElementById('market-bar');
         const explorerView = document.getElementById('explorer-view');
         const marketsView = document.getElementById('markets-view');
 
-        if (!navExplorer || !explorerView) return;
+        if (!explorerView) return;
 
         const hideAllViews = () => {
             document.querySelectorAll('.nav__link').forEach(l => l.classList.remove('nav__link--active'));
@@ -6308,11 +6305,6 @@ window.API_BASE = '';
             if(explorerView) explorerView.style.display = 'none';
             if(marketsView) marketsView.style.display = 'none';
         };
-
-        if(navExplorer) navExplorer.addEventListener('click', (e) => {
-            e.preventDefault();
-            window.location.href = '/explorer';
-        });
 
         if(navTrade) navTrade.addEventListener('click', (e) => {
             e.preventDefault();
