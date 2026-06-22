@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Strata v1 — Investment One-Pager</title>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:Manrope,sans-serif;background:#080c12;color:#d4d4d8;line-height:1.65;max-width:780px;margin:0 auto;padding:64px 44px}
+
+/* Hero */
+.hero{margin-bottom:56px}
+.hero .badge{display:inline-block;font-size:12px;font-weight:700;color:#00d4aa;letter-spacing:2px;margin-bottom:14px}
+.hero h1{font-size:40px;font-weight:800;line-height:1.15;color:#fff;margin-bottom:14px;letter-spacing:-0.5px}
+.hero p{font-size:16px;color:#7c8798;max-width:620px;line-height:1.6}
+
+/* Section heading inside list */
+.section-head{font-size:12px;font-weight:700;color:#00d4aa;text-transform:uppercase;letter-spacing:2.5px;margin:44px 0 20px -58px;padding-bottom:10px;border-bottom:1px solid #141c26;list-style:none;counter-increment:none}
+.section-head::before{display:none}
+
+/* List */
+ol{list-style:none;padding:0}
+ol li{position:relative;font-size:15px;color:#c8ccd4;padding:0 0 20px 58px;line-height:1.6;counter-increment:item}
+ol li::before{content:counter(item);position:absolute;left:0;top:-2px;width:36px;height:36px;border-radius:10px;background:#0d1520;border:1px solid #1a2432;color:#00d4aa;font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:700;display:flex;align-items:center;justify-content:center}
+ol li:last-child{padding-bottom:0}
+ol li strong{color:#fff;font-weight:600}
+
+/* Divider */
+hr{border:none;border-top:1px solid #141c26;margin:48px 0}
+
+/* CTA */
+.cta{background:linear-gradient(135deg,#0a1e1a,#0d2018);border:1px solid #00d4aa33;border-radius:14px;padding:28px 32px;text-align:center}
+.cta p{font-size:16px;color:#00d4aa;font-weight:600;line-height:1.6}
+.cta .sub{display:block;font-size:13px;color:#7c8798;font-weight:400;margin-top:10px;line-height:1.6}
+
+.footer{font-size:11px;color:#3a4455;text-align:center;margin-top:48px;letter-spacing:0.5px}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="badge">STRATA v1</div>
+  <h1>Strata is the deepest spot order book on-chain from day one.</h1>
+  <p>Three liquidity layers. One unified book. AVL — our own liquidity engine — scans every AMM pool on Solana and maps hidden depth into visible, tradeable order book levels. 100% fill guarantee.</p>
+</div>
+
+<ol>
+  <li class="section-head">The Main Problem</li>
+  <li>There is no real spot order book UI on Solana with real deep liquidity — nothing that looks like Binance, nothing a professional trader recognizes</li>
+  <li>Order book DEXes all have the same death spiral: launch empty → no traders come → stays empty → dies</li>
+  <li>Every existing order book DEX needs paid market maker programs just to make the book look alive — $5K–$30K/month per pair, plus locked inventory capital. Even a handful of pairs burns millions annually</li>
+  <li>AMMs are not order books — users can't see market depth, can't place limits, the experience is completely alien compared to CEXes or TradFi</li>
+
+  <li class="section-head">Core Tech Pieces</li>
+  <li><strong>AVL — our own liquidity engine, powered by Sonar</strong> — scans every AMM pool on Solana and maps all that hidden liquidity into visible order book depth. The book is full on day one, without needing a single real order yet. Covers the entire price range. When a trade executes against AVL depth, it routes through Sonar, our own aggregator — no external dependency</li>
+  <li><strong>Real limit orders</strong> — users place orders on-chain, funds stay in their own vault, they can cancel and withdraw anytime without depending on any server. Standard order types (limit, market, post-only, fill-or-kill)</li>
+  <li><strong>Intent limit orders — Just-In-Time liquidity from market makers</strong> — MMs post intent on-chain to fill at certain price levels without locking capital upfront. When a trader hits their level, the first MM to respond fills the trade. Reliable MMs earn priority and reputation. Unreliable ones get pushed to the back. Maximum capital efficiency — one deposit covers quoting across all price levels</li>
+  <li><strong>Three layers feed the liquidity flywheel</strong> — AVL depth makes the book look alive → traders come → real orders accumulate → deeper real orders attract more MMs → more depth discovered → deeper book → more traders. Each layer strengthens the others</li>
+  <li><strong>100% fill guarantee</strong> — every trade routes through: real orders first → MMs in parallel with AVL → AVL as the guaranteed fallback. No trade goes unfilled</li>
+  <li><strong>Hybrid architecture</strong> — orders live on-chain (users always control their funds), matching runs off-chain for speed, every settlement is validated on-chain before executing</li>
+  <li><strong>Sonar is built in-house</strong> — custom aggregator with support for every major AMM on Solana. Full control over routing, sampling, and execution. No dependency on third-party aggregators</li>
+  <li><strong>Proprietary matching buffer</strong> — we run our own matching engine with a buffer window, giving us complete control over order flow. This enables protocol arbitrage, queue priority, and fee capture that no other DEX can replicate without running their own matcher</li>
+
+  <li class="section-head">How We Make Money</li>
+  <li><strong>10 bps taker fee</strong> on real order and MM fills. AVL fills capture a small extra spread as a fee — the trade routes through Sonar</li>
+  <li><strong>Protocol arbitrage</strong> — when matching orders cross, each user gets their exact limit price and the protocol keeps the spread. Protocol also takes first fill position at the best price. Users get what they asked for. Protocol captures what neither user would have gotten</li>
+  <li><strong>The structural moat</strong> — no paid MM programs needed. MMs compete on spread against already-visible AVL depth. Hedge cost near zero (they trade against the same pools we sample). Day-one deep books on any token pair. Even on-chain stock tokens get a real order book from day one</li>
+
+  <li class="section-head">Income Projection</li>
+  <li><strong>$80M+ annual revenue at 5% market capture</strong> — Solana did $1.6T in DEX volume in 2025. Capturing 5% of that at 10 bps average fee = $80M/year. Plus additional AVL spread capture and protocol arbitrage revenue. This is before any growth in Solana DEX volume, which has been compounding rapidly</li>
+</ol>
+
+<hr>
+
+<div class="cta">
+  <p>We are looking for angel, pre-seed, or seed funding — and ecosystem partners who want the deepest on-chain spot order book to exist.</p>
+  <span class="sub">@phizen · stratabookdex@gmail.com · stratabook.org</span>
+</div>
+
+<div class="footer">Strata v1 · Confidential</div>
+
+</body>
+</html>
