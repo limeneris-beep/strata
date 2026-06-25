@@ -1,640 +1,497 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Strata — Three-Layer Order Book DEX on Solana</title>
-<meta name="description" content="Strata is a three-layer order book DEX on Solana. Real orders, intent-based MM depth, and Aggregated Virtualized Liquidity. Every trade fills. There's always one more layer.">
-<meta property="og:title" content="Strata — Every Layer of Liquidity">
-<meta property="og:description" content="Three liquidity layers, one unified book. Real orders, intent-based MM depth, and virtualized AMM liquidity — all visible, all fillable. Built on Solana.">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Strata — The Deepest Order Book on Solana</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%2315171f'/%3E%3Crect x='7' y='8' width='18' height='3.4' rx='1.7' fill='%235ec8b0'/%3E%3Crect x='7' y='14.3' width='13.5' height='3.4' rx='1.7' fill='%23ecc06a'/%3E%3Crect x='7' y='20.6' width='9' height='3.4' rx='1.7' fill='%236166d6'/%3E%3C/svg%3E" />
+<meta name="description" content="Strata is a multi-layer order book DEX on Solana. AVL + market-maker intents + the first-ever Orbital pools make the deepest book in DeFi — where every trade fills and the book is never empty." />
 <style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-:root{
-  --bg:#06080d;--bg2:#0a0e16;--bg3:#0f141f;
-  --border:rgba(255,255,255,0.06);--border2:rgba(255,255,255,0.10);
-  --text:#edece6;--text2:#9d9a8f;--text3:#5c5950;
-  --green:#2ef2cc;--green2:rgba(46,242,204,0.10);--green-glow:rgba(46,242,204,0.30);
-  --gold:#f5c842;--gold2:rgba(245,200,66,0.10);
-  --blue:#5e9eff;--blue2:rgba(94,158,255,0.10);
-  --red:#ff5c72;--red2:rgba(255,92,114,0.10);
-  --purple:#a78bfa;--purple2:rgba(167,139,250,0.10);
-  --mw:1200px;--r:12px;--r2:8px
-}
-html{scroll-behavior:smooth;background:var(--bg)}
-body{font-family:'Manrope',-apple-system,sans-serif;background:var(--bg);color:var(--text);line-height:1.55;-webkit-font-smoothing:antialiased}
+  :root{
+    --bg:#06070d;
+    --bg-2:#0a0d18;
+    --panel:#0e1220;
+    --panel-2:#11162a;
+    --line:rgba(255,255,255,.08);
+    --line-2:rgba(255,255,255,.14);
+    --txt:#eaf0ff;
+    --muted:#9aa6c4;
+    --faint:#6b7798;
+    --c1:#5b8bff;   /* layer 1 blue */
+    --c2:#9b6bff;   /* layer 2 violet */
+    --c3:#2ee6c9;   /* layer 3 teal */
+    --accent:#7c5cff;
+    --glow:rgba(124,92,255,.35);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{scroll-behavior:smooth}
+  body{
+    background:var(--bg);
+    color:var(--txt);
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,Helvetica,Arial,sans-serif;
+    line-height:1.55;
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  a{color:inherit;text-decoration:none}
+  .wrap{max-width:1140px;margin:0 auto;padding:0 24px}
+  .mono{font-family:"SFMono-Regular",ui-monospace,Menlo,Consolas,monospace}
 
-/* NAV */
-.nav{position:fixed;top:0;left:0;right:0;z-index:100;backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);background:rgba(6,8,13,0.78);border-bottom:1px solid var(--border)}
-.nav-in{max-width:var(--mw);margin:0 auto;display:flex;align-items:center;justify-content:space-between;padding:18px 32px}
-.nav-logo{display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--text)}
-.logo-s{display:flex;flex-direction:column;gap:4px;width:28px}
-.logo-s span{height:4px;border-radius:2px}
-.logo-s span:nth-child(1){background:var(--green);width:100%}
-.logo-s span:nth-child(2){background:var(--gold);width:70%}
-.logo-s span:nth-child(3){background:var(--blue);width:45%}
-.nav-logo strong{font-size:22px;font-weight:700;letter-spacing:-0.4px}
-.nav-r{display:flex;gap:32px;align-items:center}
-.nav-r a{color:var(--text2);text-decoration:none;font-size:14px;font-weight:500;transition:color .2s}
-.nav-r a:hover{color:var(--text)}
-.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 22px;border-radius:100px;font-family:'Manrope',sans-serif;font-size:14px;font-weight:600;cursor:pointer;transition:all .25s;border:none;text-decoration:none;white-space:nowrap}
-.btn-p{background:var(--green);color:#06080d}
-.btn-p:hover{background:#5cf5d8;transform:translateY(-1px);box-shadow:0 6px 30px var(--green-glow)}
-.btn-o{background:transparent;color:var(--text);border:1px solid var(--border2)}
-.btn-o:hover{border-color:var(--text2);background:rgba(255,255,255,0.02)}
+  /* ---------- background glow ---------- */
+  .bgfx{position:fixed;inset:0;z-index:-1;pointer-events:none}
+  .bgfx::before{
+    content:"";position:absolute;top:-20%;left:50%;transform:translateX(-50%);
+    width:900px;height:900px;border-radius:50%;
+    background:radial-gradient(circle, rgba(124,92,255,.18), transparent 60%);
+    filter:blur(20px);
+  }
+  .bgfx::after{
+    content:"";position:absolute;bottom:-10%;right:-10%;
+    width:700px;height:700px;border-radius:50%;
+    background:radial-gradient(circle, rgba(46,230,201,.10), transparent 60%);
+    filter:blur(20px);
+  }
 
-/* SECTIONS */
-.sec{padding:120px 32px}
-.sec-in{max-width:var(--mw);margin:0 auto}
-.sec-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:3px;color:var(--green);margin-bottom:20px}
-.sec-h2{font-size:clamp(32px,5vw,52px);font-weight:700;letter-spacing:-1.5px;line-height:1.1;margin-bottom:20px}
-.sec-p{font-size:17px;color:var(--text2);max-width:580px;line-height:1.7}
+  /* ---------- nav ---------- */
+  nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(12px);
+    background:rgba(6,7,13,.7);border-bottom:1px solid var(--line)}
+  .nav-in{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;height:72px;gap:16px}
+  .nav-in .brand{justify-self:start}
+  .nav-cta{justify-self:end}
+  .brand{display:flex;align-items:center;gap:11px;font-weight:800;letter-spacing:-.01em;font-size:24px}
+  .brand .mark{width:30px;height:30px;flex:none;display:block}
+  .nav-links{display:flex;gap:30px;align-items:center;justify-self:center}
+  .nav-links a{color:var(--muted);font-size:14px;transition:color .2s}
+  .nav-links a:hover{color:var(--txt)}
+  .btn{display:inline-block;padding:10px 18px;border-radius:10px;font-weight:600;font-size:14px;
+    border:1px solid var(--line-2);transition:all .2s;cursor:pointer}
+  .btn-primary{background:linear-gradient(120deg,var(--accent),#5b8bff);border-color:transparent;color:#fff;
+    box-shadow:0 6px 24px -8px var(--glow)}
+  .btn-primary:hover{transform:translateY(-1px);box-shadow:0 10px 30px -8px var(--glow)}
+  .btn-ghost:hover{border-color:var(--line-2);background:rgba(255,255,255,.04)}
+  @media(max-width:780px){.nav-links{display:none}}
 
-/* HERO */
-.hero{padding:200px 32px 160px;position:relative;overflow:hidden}
-.hero::before{content:'';position:absolute;top:-30%;left:-15%;width:70%;height:140%;background:radial-gradient(ellipse at 50% 45%,rgba(46,242,204,0.12) 0%,transparent 65%);pointer-events:none}
-.hero::after{content:'';position:absolute;bottom:-30%;right:-10%;width:55%;height:100%;background:radial-gradient(ellipse at 50% 60%,rgba(94,158,255,0.07) 0%,transparent 60%);pointer-events:none}
-.hero-in{max-width:var(--mw);margin:0 auto;position:relative;z-index:1}
-.hero-badge{display:inline-flex;align-items:center;gap:8px;padding:6px 16px;border-radius:100px;background:rgba(46,242,204,0.08);border:1px solid rgba(46,242,204,0.20);font-size:13px;font-weight:600;color:var(--green);margin-bottom:32px}
-.hero-badge .dot{width:6px;height:6px;border-radius:50%;background:var(--green);animation:pulse 2s infinite}
-@keyframes pulse{0%,100%{opacity:1}50%{opacity:0.25}}
-.hero-h1{font-size:clamp(44px,7vw,80px);font-weight:800;letter-spacing:-3px;line-height:1.02;margin-bottom:28px}
-.hero-h1 em{font-style:normal;background:linear-gradient(135deg,var(--green) 0%,#40f0d0 40%,var(--blue) 75%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
-.hero-p{font-size:19px;color:var(--text2);max-width:560px;line-height:1.7;margin-bottom:44px}
-.hero-btns{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:80px}
+  /* ---------- hero ---------- */
+  header{padding:96px 0 72px;text-align:center;position:relative}
+  .pill{display:inline-flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);
+    border:1px solid var(--line);border-radius:999px;padding:6px 14px;margin-bottom:30px}
+  .pill .dot{width:7px;height:7px;border-radius:50%;background:var(--c3);box-shadow:0 0 10px var(--c3)}
+  h1{font-size:clamp(38px,7vw,76px);line-height:1.02;font-weight:800;letter-spacing:-.02em}
+  h1 .grad{background:linear-gradient(120deg,#fff 10%,#b9c6ff 45%,var(--c3) 100%);
+    -webkit-background-clip:text;background-clip:text;color:transparent}
+  .sub{max-width:660px;margin:26px auto 0;color:var(--muted);font-size:clamp(16px,2.4vw,20px)}
+  .hero-cta{display:flex;gap:14px;justify-content:center;margin-top:38px;flex-wrap:wrap}
+  .stats{display:flex;gap:48px;justify-content:center;margin-top:64px;flex-wrap:wrap}
+  .stat .n{font-size:30px;font-weight:800;letter-spacing:-.01em}
+  .stat .l{font-size:13px;color:var(--faint);margin-top:4px;text-transform:uppercase;letter-spacing:.08em}
+  .stat .n.g1{color:var(--c1)}.stat .n.g2{color:var(--c2)}.stat .n.g3{color:var(--c3)}
 
-/* HERO LAYER BARS */
-.hl-wrap{display:flex;flex-direction:column;gap:4px;max-width:520px}
-.hl{display:flex;align-items:center;gap:16px;padding:14px 20px;border-radius:8px}
-.hl:nth-child(1){background:rgba(46,242,204,0.04);border:1px solid rgba(46,242,204,0.15)}
-.hl:nth-child(2){background:rgba(245,200,66,0.04);border:1px solid rgba(245,200,66,0.12)}
-.hl:nth-child(3){background:rgba(94,158,255,0.04);border:1px solid rgba(94,158,255,0.12)}
-.hl .n{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:var(--text3);min-width:24px}
-.hl .lb{font-size:14px;font-weight:600;min-width:100px}
-.hl:nth-child(1) .lb{color:var(--green)}.hl:nth-child(2) .lb{color:var(--gold)}.hl:nth-child(3) .lb{color:var(--blue)}
-.hl .b{flex:1;height:4px;border-radius:2px;position:relative;overflow:hidden}
-.hl:nth-child(1) .b{background:rgba(46,242,204,0.08)}.hl:nth-child(2) .b{background:rgba(245,200,66,0.08)}.hl:nth-child(3) .b{background:rgba(94,158,255,0.08)}
-.hl .f{height:100%;border-radius:2px;position:absolute;left:0;top:0;animation:hlS 4s ease-in-out infinite}
-.hl:nth-child(1) .f{width:85%;background:linear-gradient(90deg,transparent,rgba(46,242,204,0.6))}
-.hl:nth-child(2) .f{width:60%;background:linear-gradient(90deg,transparent,rgba(245,200,66,0.6))}
-.hl:nth-child(3) .f{width:100%;background:linear-gradient(90deg,transparent,rgba(94,158,255,0.5))}
-@keyframes hlS{0%,100%{opacity:0.6}50%{opacity:1}}
+  /* ---------- section scaffolding ---------- */
+  section{padding:84px 0;position:relative}
+  .eyebrow{font-size:12.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--accent);font-weight:600}
+  h2{font-size:clamp(28px,4.5vw,44px);font-weight:800;letter-spacing:-.02em;margin-top:12px;line-height:1.08}
+  .lead{color:var(--muted);font-size:17px;max-width:620px;margin-top:16px}
+  .center{text-align:center}
+  .center .lead{margin-left:auto;margin-right:auto}
 
-/* TAGLINE */
-.tbar{text-align:center;padding:20px 24px;background:var(--bg3);border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
-.tbar p{font-family:'JetBrains Mono',monospace;font-size:15px;color:var(--text3)}
-.tbar strong{color:var(--green);font-weight:600}
+  /* ---------- the stack visual ---------- */
+  .stack{display:grid;grid-template-columns:1.05fr .95fr;gap:48px;align-items:center;margin-top:54px}
+  @media(max-width:880px){.stack{grid-template-columns:1fr;gap:36px}}
+  .layers{display:flex;flex-direction:column;gap:14px}
+  .layer{border:1px solid var(--line);border-radius:16px;padding:20px 22px;background:var(--panel);
+    position:relative;overflow:hidden;transition:transform .2s,border-color .2s}
+  .layer:hover{transform:translateX(4px);border-color:var(--line-2)}
+  .layer .bar{position:absolute;left:0;top:0;bottom:0;width:4px}
+  .layer.l1 .bar{background:var(--c1)}.layer.l2 .bar{background:var(--c2)}.layer.l3 .bar{background:var(--c3)}
+  .layer h3{font-size:18px;font-weight:700;display:flex;align-items:center;gap:10px}
+  .layer .tag{font-size:11px;color:var(--faint);border:1px solid var(--line);border-radius:6px;padding:2px 8px;
+    text-transform:uppercase;letter-spacing:.06em}
+  .layer p{color:var(--muted);font-size:14.5px;margin-top:8px}
 
-/* LAYER CARDS */
-.lgrid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border-radius:var(--r);overflow:hidden;margin-top:60px}
-.lc{background:var(--bg2);padding:44px 36px;position:relative;transition:background .3s}
-.lc:hover{background:var(--bg3)}
-.lc .band{position:absolute;top:0;left:0;right:0;height:3px}
-.lc:nth-child(1) .band{background:linear-gradient(90deg,var(--green),transparent)}
-.lc:nth-child(2) .band{background:linear-gradient(90deg,var(--gold),transparent)}
-.lc:nth-child(3) .band{background:linear-gradient(90deg,var(--blue),transparent)}
-.lc .num{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--text3);margin-bottom:20px}
-.lc h3{font-size:22px;font-weight:700;letter-spacing:-0.4px;margin-bottom:8px}
-.lc:nth-child(1) h3{color:var(--green)}.lc:nth-child(2) h3{color:var(--gold)}.lc:nth-child(3) h3{color:var(--blue)}
-.lc .tag{display:inline-block;padding:3px 10px;border-radius:4px;font-size:11px;font-weight:600;margin-bottom:16px}
-.lc:nth-child(1) .tag{background:rgba(46,242,204,0.12);color:var(--green)}
-.lc:nth-child(2) .tag{background:rgba(245,200,66,0.12);color:var(--gold)}
-.lc:nth-child(3) .tag{background:rgba(94,158,255,0.12);color:var(--blue)}
-.lc p{font-size:14px;color:var(--text2);line-height:1.7}
-.lc ul{list-style:none;margin-top:16px}
-.lc ul li{font-size:13px;color:var(--text3);padding:3px 0;font-family:'JetBrains Mono',monospace}
+  /* book mock */
+  .book{border:1px solid var(--line);border-radius:18px;background:linear-gradient(180deg,var(--panel-2),var(--panel));
+    padding:18px;font-family:ui-monospace,Menlo,Consolas,monospace}
+  .book .bhead{display:flex;justify-content:space-between;color:var(--faint);font-size:12px;margin-bottom:10px}
+  .row{display:flex;align-items:center;gap:8px;height:24px;font-size:12.5px}
+  .row .px{width:62px;color:var(--muted)}
+  .row .depth{flex:1;height:14px;border-radius:4px}
+  .row .sz{width:54px;text-align:right;color:var(--faint)}
+  .ask .px{color:#ff8a9b}.bid .px{color:#73e0b0}
+  .mid{display:flex;justify-content:space-between;align-items:center;padding:8px 0;margin:6px 0;
+    border-top:1px dashed var(--line);border-bottom:1px dashed var(--line);color:var(--txt);font-size:13px}
+  .legend{display:flex;gap:16px;margin-top:14px;font-size:11.5px;color:var(--faint);flex-wrap:wrap}
+  .legend span{display:flex;align-items:center;gap:6px}
+  .sw{width:10px;height:10px;border-radius:3px;display:inline-block}
 
-/* LIVE BOOK */
-.vbook{margin-top:60px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);overflow:hidden}
-.vbook-h{display:flex;align-items:center;justify-content:space-between;padding:14px 24px;border-bottom:1px solid var(--border)}
-.vbook-h span{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:2px;color:var(--text3)}
-.vbook-h .pair{font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text);font-weight:600}
-.vbook-b{padding:16px 24px}
-.vr{display:flex;align-items:center;gap:12px;padding:5px 0}
-.vr .p{width:80px;font-family:'JetBrains Mono',monospace;font-size:12px}
-.vr .p.ask{color:var(--red)}.vr .p.bid{color:var(--green)}
-.vr .sz{width:55px;text-align:right;font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text2)}
-.vr .bw{flex:1;height:16px;position:relative}
-.vr .bar{height:100%;border-radius:2px;display:flex;overflow:hidden;position:absolute;top:0;left:0}
-.vr .seg{height:100%;min-width:1px}
-.seg-r{background:rgba(255,92,114,0.50)}.seg-i{background:rgba(245,200,66,0.50)}.seg-a{background:rgba(180,180,200,0.10)}
-.seg-rb{background:rgba(46,242,204,0.55)}
-.vsp{display:flex;align-items:center;justify-content:space-between;padding:12px 0;margin:6px 0;border-top:1px solid var(--border);border-bottom:1px solid var(--border)}
-.vsp .mid{font-family:'JetBrains Mono',monospace;font-size:14px;font-weight:600;color:var(--text)}
-.vsp .pct{font-family:'JetBrains Mono',monospace;font-size:10px;padding:3px 8px;border-radius:4px;background:rgba(46,242,204,0.12);color:var(--green)}
-.vleg{display:flex;gap:18px;padding-top:14px;font-size:11px;color:var(--text3);flex-wrap:wrap}
-.vleg span{display:flex;align-items:center;gap:6px}
-.sw{width:10px;height:10px;border-radius:2px}
-.sw-rl{background:rgba(46,242,204,0.55)}.sw-rs{background:rgba(255,92,114,0.50)}.sw-in{background:rgba(245,200,66,0.50)}.sw-av{background:rgba(180,180,200,0.10);border:1px solid rgba(180,180,200,0.2)}
+  /* ---------- core tech cards ---------- */
+  .grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:22px;margin-top:54px}
+  @media(max-width:880px){.grid3{grid-template-columns:1fr}}
+  .card{border:1px solid var(--line);border-radius:18px;padding:28px;background:var(--panel);
+    position:relative;transition:transform .2s,border-color .2s,box-shadow .2s}
+  .card:hover{transform:translateY(-4px);border-color:var(--line-2);box-shadow:0 20px 50px -30px var(--glow)}
+  .card .ic{width:44px;height:44px;border-radius:12px;display:grid;place-items:center;margin-bottom:18px;
+    font-size:20px;border:1px solid var(--line-2)}
+  .card h3{font-size:20px;font-weight:700}
+  .card .kicker{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);font-weight:600;margin-bottom:6px}
+  .card p{color:var(--muted);font-size:14.5px;margin-top:10px}
+  .card ul{list-style:none;margin-top:16px;display:flex;flex-direction:column;gap:8px}
+  .card li{color:var(--muted);font-size:13.5px;display:flex;gap:9px;align-items:flex-start}
+  .card li::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--accent);margin-top:7px;flex:none}
+  .first-badge{position:absolute;top:18px;right:18px;font-size:10.5px;font-weight:700;letter-spacing:.05em;
+    text-transform:uppercase;background:linear-gradient(120deg,var(--c3),#5b8bff);color:#04121a;
+    padding:4px 9px;border-radius:999px}
 
-/* HOW IT WORKS */
-.flow{display:flex;gap:1px;background:var(--border);border-radius:var(--r);overflow:hidden;margin-top:60px}
-.fs{flex:1;background:var(--bg2);padding:40px 32px;text-align:center;transition:background .3s}
-.fs:hover{background:var(--bg3)}
-.fs .ic{width:48px;height:48px;border-radius:var(--r2);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:20px}
-.fs:nth-child(1) .ic{background:var(--green2);color:var(--green)}
-.fs:nth-child(2) .ic{background:var(--gold2);color:var(--gold)}
-.fs:nth-child(3) .ic{background:var(--blue2);color:var(--blue)}
-.fs .sn{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--green);margin-bottom:8px}
-.fs h4{font-size:17px;font-weight:700;margin-bottom:10px;letter-spacing:-0.2px}
-.fs p{font-size:14px;color:var(--text2);line-height:1.6}
+  /* ---------- waterfall / how fills work ---------- */
+  .flow{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;margin-top:48px}
+  @media(max-width:880px){.flow{grid-template-columns:1fr 1fr}}
+  @media(max-width:520px){.flow{grid-template-columns:1fr}}
+  .step{border:1px solid var(--line);border-radius:16px;padding:22px;background:var(--panel);position:relative}
+  .step .num{font-family:ui-monospace,monospace;font-size:12px;color:var(--faint)}
+  .step h4{margin-top:8px;font-size:16px;font-weight:700}
+  .step p{color:var(--muted);font-size:13.5px;margin-top:8px}
+  .step .arrow{position:absolute;right:-14px;top:50%;transform:translateY(-50%);color:var(--line-2);font-size:20px}
+  @media(max-width:880px){.step .arrow{display:none}}
 
-/* AVL DEEP DIVE */
-.avl-detail{margin-top:60px;display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);border-radius:var(--r);overflow:hidden}
-.adc{background:var(--bg2);padding:40px 36px}
-.adc h4{font-size:17px;font-weight:700;margin-bottom:12px;letter-spacing:-0.2px}
-.adc p{font-size:14px;color:var(--text2);line-height:1.7}
-.samp-table{margin-top:16px;width:100%;border-collapse:collapse}
-.samp-table td{padding:6px 12px;font-family:'JetBrains Mono',monospace;font-size:12px;border-bottom:1px solid var(--border);color:var(--text2)}
-.samp-table td:nth-child(2){text-align:right;color:var(--text)}
-.samp-table td:nth-child(3){text-align:right;color:var(--green)}
-.avl-steps{display:flex;flex-direction:column;gap:16px;margin-top:20px}
-.avl-step{display:flex;gap:20px;align-items:baseline;padding:18px 24px;background:rgba(94,158,255,0.03);border:1px solid rgba(94,158,255,0.10);border-radius:var(--r2)}
-.avl-step .as-num{font-family:'JetBrains Mono',monospace;font-size:12px;font-weight:600;color:var(--blue);min-width:28px}
-.avl-step .as-body h5{font-size:14px;font-weight:700;margin-bottom:4px}
-.avl-step .as-body p{font-size:13px;color:var(--text2);line-height:1.6}
+  /* ---------- coming soon ---------- */
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:48px}
+  @media(max-width:780px){.grid2{grid-template-columns:1fr}}
+  .soon{border:1px solid var(--line);border-radius:18px;padding:30px;background:
+    linear-gradient(180deg,rgba(124,92,255,.06),transparent);position:relative}
+  .soon .chip{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;
+    color:var(--c3);border:1px solid rgba(46,230,201,.35);border-radius:999px;padding:4px 10px;display:inline-block}
+  .soon h3{font-size:22px;font-weight:700;margin-top:16px}
+  .soon p{color:var(--muted);font-size:14.5px;margin-top:10px}
 
-/* WATERFALL */
-.wf{margin-top:60px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:40px}
-.wf h4{font-size:17px;font-weight:700;margin-bottom:16px;letter-spacing:-0.2px}
-.wf-code{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text2);line-height:1.8;background:var(--bg);border-radius:var(--r2);padding:24px;overflow-x:auto;white-space:pre}
-.wf-code .kw{color:var(--green)}.wf-code .cm{color:var(--text3)}.wf-code .fn{color:var(--blue)}
+  /* ---------- cta band ---------- */
+  .band{border:1px solid var(--line);border-radius:24px;padding:56px 32px;text-align:center;
+    background:radial-gradient(circle at 50% 0%,rgba(124,92,255,.16),transparent 70%),var(--panel);}
+  .band h2{margin-top:0}
+  .band .lead{margin:14px auto 30px}
 
-/* === FLYWHEEL PENTAGON INFOGRAPHIC === */
-.flywheel{margin-top:60px}
-.fw-container{position:relative;width:100%;max-width:800px;height:520px;margin:0 auto}
-.fw-hub{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);text-align:center;z-index:5;width:160px;height:160px;border-radius:50%;background:var(--bg3);border:2px solid rgba(46,242,204,0.20);display:flex;flex-direction:column;align-items:center;justify-content:center;box-shadow:0 0 60px rgba(46,242,204,0.08)}
-.fw-hub .h-title{font-size:16px;font-weight:800;letter-spacing:-0.3px;color:var(--text)}
-.fw-hub .h-sub{font-size:11px;color:var(--green);font-family:'JetBrains Mono',monospace;margin-top:4px}
-.fw-hub .h-arrow{font-size:28px;color:var(--green);margin-top:8px;animation:pulse 2s infinite}
+  /* ---------- footer ---------- */
+  footer{border-top:1px solid var(--line);padding:48px 0 60px;margin-top:40px}
+  .foot{display:flex;justify-content:space-between;gap:24px;flex-wrap:wrap;align-items:flex-start}
+  .foot .muted{color:var(--faint);font-size:13px;margin-top:10px;max-width:320px}
+  .foot-links{display:flex;gap:40px;flex-wrap:wrap}
+  .foot-col h5{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-bottom:12px}
+  .foot-col a{display:block;color:var(--muted);font-size:14px;margin-bottom:8px;transition:color .2s}
+  .foot-col a:hover{color:var(--txt)}
+  .copy{color:var(--faint);font-size:12.5px;margin-top:36px;border-top:1px solid var(--line);padding-top:22px;
+    display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px}
 
-/* Pentagon nodes — positioned using calc from center */
-/* Pentagon radius: 180px, center at (400, 260) */
-/* N1 top: (400, 80) | N2 top-right: (571, 204) | N3 bottom-right: (506, 406) | N4 bottom-left: (294, 406) | N5 top-left: (229, 204) */
-.fw-card{position:absolute;display:flex;align-items:center;gap:14px;padding:16px 20px;background:var(--bg2);border:1px solid var(--border2);border-radius:var(--r);width:210px;transition:border-color .3s,transform .3s,box-shadow .3s;z-index:3}
-.fw-card:hover{border-color:rgba(255,255,255,0.15);transform:scale(1.03);box-shadow:0 8px 30px rgba(0,0,0,0.4)}
-.fw-card::before{content:'';position:absolute;left:0;top:8px;bottom:8px;width:3px;border-radius:2px}
-.fw-card.c1{top:64px;left:50%;transform:translateX(-50%)}.fw-card.c1::before{background:var(--green)}
-.fw-card.c2{top:188px;right:16px}.fw-card.c2::before{background:var(--gold)}
-.fw-card.c3{bottom:40px;right:55px}.fw-card.c3::before{background:var(--blue)}
-.fw-card.c4{bottom:40px;left:55px}.fw-card.c4::before{background:var(--purple)}
-.fw-card.c5{top:188px;left:16px}.fw-card.c5::before{background:var(--red)}
+  /* ---------- roadmap ---------- */
+  .road{margin-top:50px;position:relative}
+  .road::before{content:"";position:absolute;left:11px;top:6px;bottom:6px;width:2px;
+    background:linear-gradient(180deg,var(--c1),var(--c2),var(--c3),var(--line))}
+  .ritem{position:relative;padding:0 0 30px 44px}
+  .ritem:last-child{padding-bottom:0}
+  .ritem .node{position:absolute;left:3px;top:2px;width:18px;height:18px;border-radius:50%;
+    background:var(--bg);border:2px solid var(--line-2)}
+  .ritem.done .node{background:var(--c3);border-color:var(--c3);box-shadow:0 0 14px var(--c3)}
+  .ritem .phase{font-size:12px;letter-spacing:.12em;text-transform:uppercase;color:var(--accent);font-weight:600}
+  .ritem.done .phase{color:var(--c3)}
+  .ritem h4{font-size:18px;font-weight:700;margin-top:3px}
+  .ritem p{color:var(--muted);font-size:14px;margin-top:5px;max-width:560px}
 
-.fw-card .fc-icon{width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0}
-.fw-card.c1 .fc-icon{background:var(--green2);color:var(--green)}
-.fw-card.c2 .fc-icon{background:var(--gold2);color:var(--gold)}
-.fw-card.c3 .fc-icon{background:var(--blue2);color:var(--blue)}
-.fw-card.c4 .fc-icon{background:var(--purple2);color:var(--purple)}
-.fw-card.c5 .fc-icon{background:var(--red2);color:var(--red)}
-
-.fw-card .fc-body .fc-label{font-size:14px;font-weight:700;color:var(--text);letter-spacing:-0.2px}
-.fw-card .fc-body .fc-desc{font-size:11px;color:var(--text3);line-height:1.4;margin-top:2px}
-
-/* Pentagon connecting lines — SVG overlay */
-.fw-lines{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:1}
-.fw-lines line,.fw-lines path{stroke:rgba(255,255,255,0.07);stroke-width:1.5;fill:none;stroke-dasharray:6 4}
-
-/* Product detail cards */
-.fw-products{margin-top:60px;display:grid;grid-template-columns:repeat(2,1fr);gap:20px}
-.fw-prod{background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:36px;transition:border-color .3s,transform .3s;display:flex;gap:24px;align-items:flex-start}
-.fw-prod:hover{border-color:var(--border2);transform:translateY(-3px)}
-.fw-prod .fpi{width:52px;height:52px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
-.fw-prod .fpb h4{font-size:18px;font-weight:700;margin-bottom:8px;letter-spacing:-0.3px}
-.fw-prod .fpb p{font-size:14px;color:var(--text2);line-height:1.7;margin-bottom:12px}
-.fw-prod .fpb .how-tag{display:inline-block;font-size:11px;font-weight:600;padding:3px 10px;border-radius:4px;margin-top:4px}
-
-/* Flow chain diagram */
-.flow-chain{margin-top:60px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r);padding:40px;text-align:center}
-.flow-chain .chain-row{display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;margin-bottom:16px}
-.flow-chain .chain-box{padding:14px 22px;border-radius:var(--r2);font-weight:700;font-size:14px;white-space:nowrap;letter-spacing:-0.2px}
-.flow-chain .chain-box.cbg{background:rgba(46,242,204,0.08);border:1px solid rgba(46,242,204,0.2);color:var(--green)}
-.flow-chain .chain-box.cbo{background:rgba(245,200,66,0.08);border:1px solid rgba(245,200,66,0.2);color:var(--gold)}
-.flow-chain .chain-box.cbb{background:rgba(94,158,255,0.08);border:1px solid rgba(94,158,255,0.2);color:var(--blue)}
-.flow-chain .chain-box.cbp{background:rgba(167,139,250,0.08);border:1px solid rgba(167,139,250,0.2);color:var(--purple)}
-.flow-chain .chain-box.cbr{background:rgba(255,92,114,0.08);border:1px solid rgba(255,92,114,0.2);color:var(--red)}
-.flow-chain .chain-arr{font-size:20px;color:var(--text3)}
-.flow-chain .chain-loop{font-family:'JetBrains Mono',monospace;font-size:12px;color:var(--text3);margin-top:8px}
-
-@media(max-width:768px){
-  .fw-container{height:auto;display:flex;flex-direction:column;align-items:center;gap:12px;padding:20px 0}
-  .fw-hub{position:static;transform:none;margin-bottom:20px}
-  .fw-card{position:static;width:100%;max-width:280px}
-  .fw-lines{display:none}
-  .fw-products{grid-template-columns:1fr}
-  .fw-prod{flex-direction:column;gap:16px}
-  .flow-chain .chain-row{gap:6px}
-  .flow-chain .chain-box{font-size:12px;padding:10px 14px}
-}
-
-/* ROADMAP */
-.rlist{display:flex;flex-direction:column;gap:12px;margin-top:48px}
-.ri{display:flex;align-items:baseline;gap:24px;padding:20px 28px;background:var(--bg2);border:1px solid var(--border);border-radius:var(--r2);transition:border-color .3s}
-.ri:hover{border-color:var(--border2)}
-.ri .rt{font-family:'JetBrains Mono',monospace;font-size:13px;font-weight:600;color:var(--green);min-width:120px;white-space:nowrap}
-.ri.done .rt{color:var(--text3)}
-.ri .rh{font-weight:700;font-size:15px}
-.ri .rp{font-size:13px;color:var(--text2);margin-top:3px}
-.ri.done .rh{color:var(--text3)}
-
-/* FOOTER */
-.cta-sec{text-align:center;padding:100px 32px 120px}
-.cta-in{max-width:600px;margin:0 auto}
-.cta-in h2{font-size:clamp(28px,4vw,44px);font-weight:700;letter-spacing:-1px;margin-bottom:16px}
-.cta-in p{font-size:17px;color:var(--text2);margin-bottom:36px;line-height:1.65}
-.cta-btns{display:flex;gap:14px;justify-content:center;flex-wrap:wrap}
-footer{border-top:1px solid var(--border);padding:32px}
-.fin{max-width:var(--mw);margin:0 auto;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:16px}
-.fl{display:flex;align-items:center;gap:12px;color:var(--text3);font-size:13px}
-.fr{display:flex;gap:24px}
-.fr a{color:var(--text3);text-decoration:none;font-size:13px;transition:color .2s}
-.fr a:hover{color:var(--text)}
-
-@media(max-width:768px){
-  .lgrid{grid-template-columns:1fr}.flow{flex-direction:column}.fw-products{grid-template-columns:1fr}.avl-detail{grid-template-columns:1fr}.ri{flex-direction:column;gap:6px}.hero-h1{font-size:38px;letter-spacing:-1px}.nav-r a:not(.btn){display:none}.sec{padding:80px 20px}.hero{padding:160px 20px 100px}.wf{padding:24px}.wf-code{font-size:11px;padding:16px}.fw-ring{max-width:400px}.fw-node{width:90px}.fw-node .fw-label{font-size:11px}.fw-node .fw-desc{display:none}.fw-prod{flex-direction:column;gap:16px}.flow-diagram{padding:24px}.flow-row{gap:8px;min-width:0}
-}
+  .reveal{opacity:0;transform:translateY(18px);transition:opacity .6s ease,transform .6s ease}
+  .reveal.in{opacity:1;transform:none}
 </style>
 </head>
 <body>
+<div class="bgfx"></div>
 
-<nav class="nav">
-  <div class="nav-in">
-    <a href="#" class="nav-logo"><div class="logo-s"><span></span><span></span><span></span></div><strong>Strata</strong></a>
-    <div class="nav-r">
-      <a href="#layers">Order Book</a>
-      <a href="#avl">How AVL Works</a>
-      <a href="#flywheel">Flywheel</a>
-      <a href="#roadmap">Roadmap</a>
-      <a href="https://app.stratabook.org" class="btn btn-p">Launch Terminal</a>
+<nav>
+  <div class="wrap nav-in">
+    <div class="brand">
+      <svg class="mark" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <rect x=".5" y=".5" width="31" height="31" rx="9" fill="#15171f" stroke="rgba(255,255,255,.10)"/>
+        <rect x="7" y="8" width="18" height="3.4" rx="1.7" fill="#5ec8b0"/>
+        <rect x="7" y="14.3" width="13.5" height="3.4" rx="1.7" fill="#ecc06a"/>
+        <rect x="7" y="20.6" width="9" height="3.4" rx="1.7" fill="#6166d6"/>
+      </svg>
+      Strata
     </div>
+    <div class="nav-links">
+      <a href="#book">The Book</a>
+      <a href="#tech">Core Tech</a>
+      <a href="#orbital">Orbital</a>
+      <a href="#next">What's Next</a>
+      <a href="#roadmap">Roadmap</a>
+    </div>
+    <a class="btn btn-primary nav-cta" href="https://strata-build.vercel.app" target="_blank" rel="noopener">Launch Terminal →</a>
   </div>
 </nav>
 
-<!-- HERO -->
-<section class="hero">
-  <div class="hero-in">
-    <div class="hero-badge"><span class="dot"></span> Live on Solana devnet</div>
-    <h1 class="hero-h1">There is always<br><em>another layer</em><br>of liquidity.</h1>
-    <p class="hero-p">Strata is a three-layer order book DEX that takes every source of liquidity on Solana — real orders, market maker intents, and AMM depth — and puts it on one unified book. Every trade fills. Guaranteed.</p>
-    <div class="hero-btns">
-      <a href="#layers" class="btn btn-p">See the Order Book</a>
-      <a href="https://app.stratabook.org" class="btn btn-o">Launch Terminal →</a>
-    </div>
-    <div class="hl-wrap">
-      <div class="hl"><div class="n">01</div><div class="lb">Real Orders</div><div class="b"><div class="f"></div></div></div>
-      <div class="hl"><div class="n">02</div><div class="lb">Intent Orders</div><div class="b"><div class="f"></div></div></div>
-      <div class="hl"><div class="n">03</div><div class="lb">AVL Depth</div><div class="b"><div class="f"></div></div></div>
-    </div>
+<header class="wrap">
+  <div class="pill"><span class="dot"></span> Live on Solana devnet</div>
+  <h1>The deepest book<br><span class="grad">in DeFi.</span></h1>
+  <p class="sub">Strata is a multi-layer order book DEX on Solana. Real orders, market-maker intents, and aggregated AMM depth on one unified book — so it's never empty and every trade fills.</p>
+  <div class="hero-cta">
+    <a class="btn btn-primary" href="https://strata-build.vercel.app" target="_blank" rel="noopener">Launch Terminal →</a>
+    <a class="btn btn-ghost" href="#book">See how the book works</a>
   </div>
-</section>
-
-<div class="tbar"><p>There's always <strong>one more layer</strong>.</p></div>
-
-<!-- ORDER BOOK -->
-<section class="sec" id="layers" style="padding-top:20px">
-  <div class="sec-in">
-    <div class="sec-label">The Order Book</div>
-    <h2 class="sec-h2">Three liquidity layers.<br>One unified book.</h2>
-    <p class="sec-p">Every taker order routes through priority — real orders fill first, then intent RFQ, then AVL provides guaranteed fallback. 100% fill rate by design. No other DEX does this.</p>
-
-    <div class="lgrid">
-      <div class="lc">
-        <div class="band"></div>
-        <div class="num">LAYER 1</div>
-        <div class="tag">Highest Priority</div>
-        <h3>Real Orders</h3>
-        <p>User limit orders escrowed in on-chain UserVault PDAs. Funds are locked — hard commitment. Settle immediately when matched via price-time priority.</p>
-        <ul><li>GTC · IOC · FOK · Post-Only</li><li>On-chain settlement</li><li>Funds in vault</li></ul>
-      </div>
-      <div class="lc">
-        <div class="band"></div>
-        <div class="num">LAYER 2</div>
-        <div class="tag">Medium Priority</div>
-        <h3>Intent Orders</h3>
-        <p>Market makers post soft RFQ commitments stored on-chain in IntentRecord PDAs. Reputation-backed, not capital-locked. Parallel RFQ to all MMs at match — first responder fills.</p>
-        <ul><li>Reputation-scored</li><li>12-second RFQ window</li><li>Stake-tiered priority</li></ul>
-      </div>
-      <div class="lc">
-        <div class="band"></div>
-        <div class="num">LAYER 3</div>
-        <div class="tag">Universal Fallback</div>
-        <h3>AVL Depth</h3>
-        <p>Jupiter/AMM liquidity mirrored as visible depth. Depth Sampler maps the curve, fresh quote + atomic CPI swap on execution. Price guard on-chain. Book is never empty.</p>
-        <ul><li>40–60 levels per side</li><li>2–5s refresh inner band</li><li>No funds until execution</li></ul>
-      </div>
-    </div>
-
-    <!-- LIVE BOOK -->
-    <div class="vbook">
-      <div class="vbook-h"><span>Live Order Book</span><span class="pair">SOL / USDC</span></div>
-      <div class="vbook-b">
-        <div class="vr"><span class="p ask">150.85</span><span class="sz">18.4K</span><div class="bw"><div class="bar" style="width:100%"><div class="seg seg-r" style="width:8%"></div><div class="seg seg-i" style="width:22%"></div><div class="seg seg-a" style="width:70%"></div></div></div></div>
-        <div class="vr"><span class="p ask">150.55</span><span class="sz">12.4K</span><div class="bw"><div class="bar" style="width:68%"><div class="seg seg-r" style="width:12%"></div><div class="seg seg-i" style="width:28%"></div><div class="seg seg-a" style="width:60%"></div></div></div></div>
-        <div class="vr"><span class="p ask">150.30</span><span class="sz">6.9K</span><div class="bw"><div class="bar" style="width:38%"><div class="seg seg-r" style="width:22%"></div><div class="seg seg-i" style="width:35%"></div><div class="seg seg-a" style="width:43%"></div></div></div></div>
-        <div class="vr"><span class="p ask">150.12</span><span class="sz">3.4K</span><div class="bw"><div class="bar" style="width:14%"><div class="seg seg-r" style="width:50%"></div><div class="seg seg-i" style="width:50%"></div></div></div></div>
-        <div class="vsp"><span class="pct">40+ levels</span><span class="mid">150.09</span><span>Spread 0.03%</span></div>
-        <div class="vr"><span class="p bid">150.05</span><span class="sz">3.8K</span><div class="bw"><div class="bar" style="width:15%"><div class="seg seg-rb" style="width:70%"></div><div class="seg seg-i" style="width:30%"></div></div></div></div>
-        <div class="vr"><span class="p bid">149.88</span><span class="sz">8.0K</span><div class="bw"><div class="bar" style="width:36%"><div class="seg seg-rb" style="width:25%"></div><div class="seg seg-i" style="width:35%"></div><div class="seg seg-a" style="width:40%"></div></div></div></div>
-        <div class="vr"><span class="p bid">149.60</span><span class="sz">14.7K</span><div class="bw"><div class="bar" style="width:62%"><div class="seg seg-rb" style="width:15%"></div><div class="seg seg-i" style="width:25%"></div><div class="seg seg-a" style="width:60%"></div></div></div></div>
-        <div class="vr"><span class="p bid">149.25</span><span class="sz">22.1K</span><div class="bw"><div class="bar" style="width:100%"><div class="seg seg-rb" style="width:5%"></div><div class="seg seg-a" style="width:95%"></div></div></div></div>
-        <div class="vleg"><span><div class="sw sw-rl"></div> Real Bids</span><span><div class="sw sw-rs"></div> Real Asks</span><span><div class="sw sw-in"></div> Intent</span><span><div class="sw sw-av"></div> AVL</span></div>
-      </div>
-    </div>
+  <div class="stats">
+    <div class="stat"><div class="n g1">100%</div><div class="l">Fill rate by design</div></div>
+    <div class="stat"><div class="n g2">3+</div><div class="l">Liquidity layers</div></div>
+    <div class="stat"><div class="n g3">1st</div><div class="l">Orbital pools, ever</div></div>
   </div>
-</section>
+</header>
 
-<!-- HOW AVL WORKS -->
-<section class="sec" id="avl" style="padding-top:20px">
-  <div class="sec-in">
-    <div class="sec-label">The Core Innovation</div>
-    <h2 class="sec-h2">Aggregated Virtualized<br>Liquidity.</h2>
-    <p class="sec-p">AVL takes liquidity already on Solana — across Raydium, Orca, Meteora, and every AMM Jupiter routes through — and renders it as visible order book depth. No funds move until a trade executes. No new pools needed. Every AMM on Solana becomes a silent market maker.</p>
+<!-- ===================== THE BOOK ===================== -->
+<section id="book">
+  <div class="wrap">
+    <div class="eyebrow">The order book</div>
+    <h2>Every source of liquidity.<br>One book that never sleeps.</h2>
+    <p class="lead">Order book DEXes die when the book looks empty. Strata stacks liquidity in priority layers, so there's always depth to trade against — and every taker order is guaranteed to fill.</p>
 
-    <div class="avl-detail">
-      <div class="adc">
-        <h4>Sampling the Liquidity Curve</h4>
-        <p>The Depth Sampler calls Jupiter quote API at 12 size increments to build a map of available liquidity at every price level.</p>
-        <table class="samp-table">
-          <tr><td>1 SOL</td><td>$150.02</td><td>+0.01%</td></tr>
-          <tr><td>10 SOL</td><td>$150.15</td><td>+0.10%</td></tr>
-          <tr><td>50 SOL</td><td>$150.30</td><td>+0.20%</td></tr>
-          <tr><td>100 SOL</td><td>$150.52</td><td>+0.35%</td></tr>
-          <tr><td>500 SOL</td><td>$151.05</td><td>+0.70%</td></tr>
-          <tr><td>1000 SOL</td><td>$151.80</td><td>+1.20%</td></tr>
-        </table>
+    <div class="stack">
+      <div class="layers">
+        <div class="layer l1"><div class="bar"></div>
+          <h3>Real Orders <span class="tag">Layer 1 · highest priority</span></h3>
+          <p>On-chain limit orders escrowed in user vaults. Hard, locked commitments. Self-custodial — cancel and withdraw anytime, even if the matcher is down.</p>
+        </div>
+        <div class="layer l2"><div class="bar"></div>
+          <h3>MM Intents <span class="tag">Layer 2 · deep & capital-efficient</span></h3>
+          <p>Market makers post on-chain intents without locking capital per level. Reputation- and stake-backed, pooled across MMs for deep displayed size.</p>
+        </div>
+        <div class="layer l3"><div class="bar"></div>
+          <h3>AVL Depth <span class="tag">Layer 3 · guaranteed fallback</span></h3>
+          <p>Aggregated Virtualized Liquidity renders every AMM on Solana as visible book depth. The book is never empty. Every remaining order fills here.</p>
+        </div>
       </div>
-      <div class="adc">
-        <h4>How It Executes</h4>
-        <div class="avl-steps">
-          <div class="avl-step"><div class="as-num">01</div><div class="as-body"><h5>Sample continuously</h5><p>Inner band (±0.5%): every 2–5s. Outer (0.5–2%): every 10–15s. Far (2%+): 30s. 40–60 virtual levels per side.</p></div></div>
-          <div class="avl-step"><div class="as-num">02</div><div class="as-body"><h5>Map quotes to virtual orders</h5><p>Each Jupiter quote becomes a price level with incremental size, timestamp, TTL, and source tag.</p></div></div>
-          <div class="avl-step"><div class="as-num">03</div><div class="as-body"><h5>Display on unified book</h5><p>Virtual orders render as translucent bars alongside real orders. One book. All liquidity visible.</p></div></div>
-          <div class="avl-step"><div class="as-num">04</div><div class="as-body"><h5>Execute atomically on-chain</h5><p>Fresh Jupiter quote → single Solana tx via CPI → debit UserVault → swap via AMM → credit output tokens. Price guard reverts on slippage.</p></div></div>
+
+      <div class="book" aria-hidden="true">
+        <div class="bhead"><span>SOL / USDC</span><span>unified depth</span></div>
+        <div class="row ask"><span class="px">150.85</span><span class="depth" style="width:78%;background:linear-gradient(90deg,rgba(46,230,201,.35),rgba(46,230,201,.06))"></span><span class="sz">18.4K</span></div>
+        <div class="row ask"><span class="px">150.55</span><span class="depth" style="width:55%;background:linear-gradient(90deg,rgba(155,107,255,.4),rgba(155,107,255,.06))"></span><span class="sz">12.4K</span></div>
+        <div class="row ask"><span class="px">150.30</span><span class="depth" style="width:34%;background:linear-gradient(90deg,rgba(91,139,255,.55),rgba(91,139,255,.06))"></span><span class="sz">6.9K</span></div>
+        <div class="row ask"><span class="px">150.12</span><span class="depth" style="width:20%;background:linear-gradient(90deg,rgba(91,139,255,.7),rgba(91,139,255,.06))"></span><span class="sz">3.4K</span></div>
+        <div class="mid"><span class="mono">150.09</span><span style="color:var(--faint)">spread 0.03%</span></div>
+        <div class="row bid"><span class="px">150.05</span><span class="depth" style="width:22%;background:linear-gradient(90deg,rgba(91,139,255,.7),rgba(91,139,255,.06))"></span><span class="sz">3.8K</span></div>
+        <div class="row bid"><span class="px">149.88</span><span class="depth" style="width:40%;background:linear-gradient(90deg,rgba(155,107,255,.4),rgba(155,107,255,.06))"></span><span class="sz">8.0K</span></div>
+        <div class="row bid"><span class="px">149.60</span><span class="depth" style="width:62%;background:linear-gradient(90deg,rgba(46,230,201,.35),rgba(46,230,201,.06))"></span><span class="sz">14.7K</span></div>
+        <div class="row bid"><span class="px">149.25</span><span class="depth" style="width:90%;background:linear-gradient(90deg,rgba(46,230,201,.3),rgba(46,230,201,.05))"></span><span class="sz">22.1K</span></div>
+        <div class="legend">
+          <span><i class="sw" style="background:var(--c1)"></i>Real orders</span>
+          <span><i class="sw" style="background:var(--c2)"></i>MM intents</span>
+          <span><i class="sw" style="background:var(--c3)"></i>AVL depth</span>
         </div>
       </div>
     </div>
   </div>
 </section>
 
-<!-- WATERFALL -->
-<section class="sec" style="padding-top:20px">
-  <div class="sec-in">
-    <div class="sec-label">Matching Engine</div>
-    <h2 class="sec-h2">Waterfall fill.<br>100% execution.</h2>
+<!-- ===================== CORE TECH ===================== -->
+<section id="tech" style="background:linear-gradient(180deg,transparent,var(--bg-2),transparent)">
+  <div class="wrap center">
+    <div class="eyebrow">Core technology</div>
+    <h2>Liquidity, solved three ways.</h2>
+    <p class="lead">No single source is deep enough alone. Strata's edge is combining them — and being the first to ship the pieces nobody else has.</p>
+  </div>
+  <div class="wrap">
+    <div class="grid3">
+      <div class="card">
+        <div class="ic" style="color:var(--c3)">◎</div>
+        <div class="kicker">The core innovation</div>
+        <h3>AVL</h3>
+        <p>Aggregated Virtualized Liquidity takes the AMM liquidity already on Solana — Raydium, Orca, Meteora and beyond — and renders it as visible order book depth. Powered by Strata's in-house Sonar engine.</p>
+        <ul>
+          <li>Every AMM becomes a silent market maker</li>
+          <li>No new pools, no fragmentation, no funds move until execution</li>
+          <li>On-chain price guard, atomic swap — guaranteed fill or full revert</li>
+        </ul>
+      </div>
+      <div class="card">
+        <div class="ic" style="color:var(--c2)">◈</div>
+        <div class="kicker">Capital-efficient depth</div>
+        <h3>MM Intents</h3>
+        <p>Market makers quote across dozens of price levels from a single funded vault — no capital locked per level. Backed by reputation and stake, not latency.</p>
+        <ul>
+          <li>One deposit covers many levels of depth</li>
+          <li>Multi-MM pooling = deeper displayed size per level</li>
+          <li>Compete on spread and reliability, not speed races</li>
+        </ul>
+      </div>
+      <div class="card">
+        <span class="first-badge">First ever</span>
+        <div class="ic" style="color:var(--c1)">🜨</div>
+        <div class="kicker">First on Solana</div>
+        <h3>Orbital Pools</h3>
+        <p>The first production Orbital AMM — a new pool design where one n-asset pool serves every pair at once. Concentrated, capital-efficient liquidity for any basket of correlated assets.</p>
+        <ul>
+          <li>One pool, every pair — triangular-arb-free by design</li>
+          <li>Concentrated into the band where assets trade for extreme capital efficiency</li>
+          <li>First basket live: liquid staking tokens, swappable deep and cheap</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
 
+<!-- ===================== ORBITAL SPOTLIGHT ===================== -->
+<section id="orbital">
+  <div class="wrap">
+    <div class="stack">
+      <div>
+        <div class="eyebrow">First on Solana — plausibly first anywhere</div>
+        <h2>Orbital Pools.</h2>
+        <p class="lead">Orbital generalizes concentrated liquidity to an n-dimensional sphere. Instead of one pair per pool, a single pool serves every pair in a basket simultaneously — deeper, cheaper, and arbitrage-free across the whole set.</p>
+        <p class="lead">The first basket is liquid staking tokens — up to eight LSTs in one pool. Maker-funded and backstopped by AVL from day one, so there's no dead cold start: the book is live and deep before the first maker arrives. The same engine replicates across stables, BTC wrappers, and any basket of tight-band correlated assets.</p>
+        <div class="hero-cta" style="justify-content:flex-start;margin-top:28px">
+          <a class="btn btn-primary" href="https://strata-build.vercel.app" target="_blank" rel="noopener">Trade on Strata →</a>
+        </div>
+      </div>
+      <div class="book">
+        <div class="bhead"><span>Orbital LST basket</span><span>one pool · every pair</span></div>
+        <div class="row"><span class="px" style="color:var(--c1)">jitoSOL</span><span class="depth" style="width:92%;background:linear-gradient(90deg,rgba(91,139,255,.5),transparent)"></span><span class="sz">1.28◎</span></div>
+        <div class="row"><span class="px" style="color:var(--c2)">mSOL</span><span class="depth" style="width:74%;background:linear-gradient(90deg,rgba(155,107,255,.5),transparent)"></span><span class="sz">1.39◎</span></div>
+        <div class="row"><span class="px" style="color:var(--c3)">bSOL</span><span class="depth" style="width:80%;background:linear-gradient(90deg,rgba(46,230,201,.5),transparent)"></span><span class="sz">1.30◎</span></div>
+        <div class="row"><span class="px" style="color:#ffce6b">JupSOL</span><span class="depth" style="width:68%;background:linear-gradient(90deg,rgba(255,206,107,.5),transparent)"></span><span class="sz">1.10◎</span></div>
+        <div class="row"><span class="px" style="color:#ff8a9b">hSOL</span><span class="depth" style="width:60%;background:linear-gradient(90deg,rgba(255,138,155,.5),transparent)"></span><span class="sz">1.06◎</span></div>
+        <div class="mid"><span>8 assets</span><span style="color:var(--faint)">28 pairs · 1 order-set</span></div>
+        <div class="legend"><span>Rate-aware value-space pricing · concentrated near the peg</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===================== WATERFALL ===================== -->
+<section style="background:linear-gradient(180deg,transparent,var(--bg-2),transparent)">
+  <div class="wrap center">
+    <div class="eyebrow">The matching engine</div>
+    <h2>Waterfall fill. 100% execution.</h2>
+    <p class="lead">Every taker order routes through priority. Nothing is left unfilled — no other DEX does this.</p>
+  </div>
+  <div class="wrap">
     <div class="flow">
-      <div class="fs">
-        <div class="ic">◎</div>
-        <div class="sn">01</div>
-        <h4>Sample</h4>
-        <p>Depth Sampler polls Jupiter across 12 sizes to map AMM liquidity at every price — 40–60 virtual levels per side.</p>
-      </div>
-      <div class="fs">
-        <div class="ic">⇄</div>
-        <div class="sn">02</div>
-        <h4>Match</h4>
-        <p>Every taker routes through priority: real → intent RFQ → AVL fallback. Waterfall ensures nothing is left unfilled.</p>
-      </div>
-      <div class="fs">
-        <div class="ic">◈</div>
-        <div class="sn">03</div>
-        <h4>Settle</h4>
-        <p>Single atomic Solana tx via Jupiter CPI. Price guard on-chain. All or nothing — no partial fills, no broken trades.</p>
-      </div>
-    </div>
-
-    <div class="wf">
-      <h4>Waterfall Fill Algorithm</h4>
-      <div class="wf-code"><span class="cm">// 1. Fill real orders first (hard commitment, instant)</span>
-<span class="kw">for each</span> real_order at best price:
-    fill = <span class="fn">min</span>(remaining, real_order.size)
-    remaining -= fill
-    <span class="kw">if</span> remaining == 0: <span class="kw">goto</span> SETTLE
-
-<span class="cm">// 2. Parallel RFQ to all intent providers</span>
-<span class="kw">if</span> intents exist <span class="kw">and</span> remaining > 0:
-    <span class="fn">broadcast_rfq</span>(all MMs at price level, remaining, 12s window)
-    <span class="kw">for each</span> response <span class="kw">sorted by</span> tier → reputation:
-        fill = <span class="fn">min</span>(remaining, response.max_size)
-        remaining -= fill
-        <span class="kw">if</span> remaining == 0: <span class="kw">break</span>
-
-<span class="cm">// 3. AVL fallback — guaranteed fill</span>
-<span class="kw">if</span> remaining > 0:
-    quote = <span class="fn">fetch_fresh_jupiter_quote</span>(side, remaining)
-    <span class="kw">if</span> quote.price <span class="kw">within</span> max_price + slippage:
-        fills.push(AVL, quote, remaining)
-    <span class="kw">else</span>: REVERT
-
-<span class="cm">// 4. Single atomic settlement</span>
-SETTLE: <span class="fn">build_and_submit_tx</span>(taker, fills)</div>
+      <div class="step"><div class="num">01</div><h4>Real orders first</h4><p>Locked, on-chain limit orders fill instantly via price-time priority.</p><span class="arrow">→</span></div>
+      <div class="step"><div class="num">02</div><h4>Then MM intents</h4><p>Remaining size matches pre-posted market-maker quotes by stake and reputation.</p><span class="arrow">→</span></div>
+      <div class="step"><div class="num">03</div><h4>Then AVL depth</h4><p>Whatever's left routes to aggregated AMM liquidity — the guaranteed fallback.</p><span class="arrow">→</span></div>
+      <div class="step"><div class="num">04</div><h4>Atomic settle</h4><p>One Solana transaction. On-chain price guard. All-or-nothing — no broken trades.</p></div>
     </div>
   </div>
 </section>
 
-<!-- THE FLYWHEEL -->
-<section class="sec" id="flywheel">
-  <div class="sec-in">
-    <div class="sec-label">The Flywheel</div>
-    <h2 class="sec-h2">Every piece of liquidity<br>becomes a position.</h2>
-    <p class="sec-p">Strata isn't just an order book — it's a self-sustaining liquidity engine. Five participant types. Five ways to earn. All feeding each other in a cycle that gets stronger the more people use it.</p>
-
-    <!-- FLYWHEEL PENTAGON -->
-    <div class="flywheel">
-      <div class="fw-container">
-        <!-- SVG connecting lines -->
-        <svg class="fw-lines" viewBox="0 0 800 520" preserveAspectRatio="xMidYMid meet">
-          <defs>
-            <marker id="arrowhead" markerWidth="5" markerHeight="4" refX="2.5" refY="2" orient="auto">
-              <polygon points="0,0 5,2 0,4" fill="rgba(255,255,255,0.15)"/>
-            </marker>
-          </defs>
-          <!-- Lines connecting cards in sequence, with small gaps from card edges -->
-          <!-- C1(400,105) → C2(620,230) -->
-          <line x1="430" y1="115" x2="560" y2="210" marker-end="url(#arrowhead)"/>
-          <!-- C2(620,270) → C3(570,370) -->
-          <line x1="595" y1="285" x2="585" y2="340" marker-end="url(#arrowhead)"/>
-          <!-- C3(430,370) → C4(370,370) -->
-          <line x1="430" y1="385" x2="380" y2="385" marker-end="url(#arrowhead)"/>
-          <!-- C4(240,370) → C5(180,270) -->
-          <line x1="230" y1="350" x2="200" y2="295" marker-end="url(#arrowhead)"/>
-          <!-- C5(180,230) → C1(330,115) -->
-          <line x1="260" y1="215" x2="330" y2="130" marker-end="url(#arrowhead)"/>
-          <!-- Faint outer ring -->
-          <circle cx="400" cy="260" r="190" fill="none" stroke="rgba(255,255,255,0.03)" stroke-width="0.5" stroke-dasharray="3 5"/>
-        </svg>
-
-        <!-- Center hub -->
-        <div class="fw-hub">
-          <div class="h-title">THE FLYWHEEL</div>
-          <div class="h-sub">self-sustaining cycle</div>
-          <div class="h-arrow">↻</div>
-        </div>
-
-        <!-- 5 participant cards arranged in pentagon -->
-        <div class="fw-card c1">
-          <div class="fc-icon">◆</div>
-          <div class="fc-body">
-            <div class="fc-label">Options Writers</div>
-            <div class="fc-desc">Earn premium on resting limit orders</div>
-          </div>
-        </div>
-        <div class="fw-card c2">
-          <div class="fc-icon">◈</div>
-          <div class="fc-body">
-            <div class="fc-label">Liquidity Bettors</div>
-            <div class="fc-desc">Stake on depth levels filling</div>
-          </div>
-        </div>
-        <div class="fw-card c3">
-          <div class="fc-icon">◎</div>
-          <div class="fc-body">
-            <div class="fc-label">Range Providers</div>
-            <div class="fc-desc">Concentrate depth with leverage</div>
-          </div>
-        </div>
-        <div class="fw-card c4">
-          <div class="fc-icon">◇</div>
-          <div class="fc-body">
-            <div class="fc-label">Market Makers</div>
-            <div class="fc-desc">Quote tighter inside AVL spread</div>
-          </div>
-        </div>
-        <div class="fw-card c5">
-          <div class="fc-icon">●</div>
-          <div class="fc-body">
-            <div class="fc-label">Spot Traders</div>
-            <div class="fc-desc">Better fills from deeper books</div>
-          </div>
-        </div>
+<!-- ===================== WHAT'S NEXT ===================== -->
+<section id="next">
+  <div class="wrap">
+    <div class="eyebrow">Shipping next</div>
+    <h2>More ways to put liquidity to work.</h2>
+    <p class="lead">Strata isn't just a book — it's a liquidity engine. The next layers turn resting orders into income.</p>
+    <div class="grid2">
+      <div class="soon">
+        <span class="chip">Coming soon</span>
+        <h3>Yield-Bearing Limit Orders</h3>
+        <p>Resting orders shouldn't sit idle. While they wait on the book, your capital earns — routed to LSTs or lending, or capturing perp funding — with zero risk to the original order and no action required.</p>
       </div>
-    </div>
-
-    <!-- PRODUCT CHAIN -->
-    <div class="flow-chain">
-      <div class="chain-row">
-        <div class="chain-box cbg">Limit Orders</div>
-        <div class="chain-arr">→</div>
-        <div class="chain-box cbo">Generate Options</div>
-        <div class="chain-arr">→</div>
-        <div class="chain-box cbb">Sold to Bettors</div>
-        <div class="chain-arr">→</div>
-        <div class="chain-box cbp">Predictions Feed Depth</div>
-        <div class="chain-arr">→</div>
-        <div class="chain-box cbr">Deeper Books</div>
-        <div class="chain-arr">→</div>
-        <div class="chain-box cbg">More Traders</div>
-      </div>
-      <div class="chain-loop">↻ every iteration strengthens the book</div>
-    </div>
-
-    <!-- PRODUCT DETAILS -->
-    <div class="fw-products">
-      <div class="fw-prod">
-        <div class="fpi" style="background:var(--green2);color:var(--green)">◆</div>
-        <div class="fpb">
-          <h4>Yield-Bearing Limit Orders</h4>
-          <p>Resting limit orders that sit unfilled serve as collateral for short-duration options elsewhere in DeFi. The maker earns premium while the order stays available on the book — no action required, no risk to the original order.</p>
-          <div class="how-tag" style="background:var(--green2);color:var(--green)">Maker places limit → Strata writes covered call → option sold to bettors → maker keeps premium</div>
-        </div>
-      </div>
-      <div class="fw-prod">
-        <div class="fpi" style="background:var(--gold2);color:var(--gold)">◈</div>
-        <div class="fpb">
-          <h4>Liquidity Prediction Markets</h4>
-          <p>"Will there be >500 SOL at $150 in the next hour?" Traders stake on whether specific depth levels will fill. Predictions aggregate into signals that feed back into the book — market makers see the signal and quote accordingly. The book becomes self-aware.</p>
-          <div class="how-tag" style="background:var(--gold2);color:var(--gold)">Bettor stakes on depth level → predictions surface liquidity expectations → MMs adjust quotes → book gets deeper</div>
-        </div>
-      </div>
-      <div class="fw-prod">
-        <div class="fpi" style="background:var(--red2);color:var(--red)">◉</div>
-        <div class="fpb">
-          <h4>Ultra-Short Options</h4>
-          <p>Calls and puts with 30-min to 4-hour expiries, displayed inline alongside spot orders on the same book. A trader who thinks SOL hits $155 in the next hour can buy spot, buy a call, or write a put — all from one interface. The options are priced against visible depth, so premiums are naturally tight.</p>
-          <div class="how-tag" style="background:var(--red2);color:var(--red)">30-min to 4-hour expiries · Inline with spot orders · Priced against visible depth · One click execution</div>
-        </div>
-      </div>
-      <div class="fw-prod">
-        <div class="fpi" style="background:var(--blue2);color:var(--blue)">◎</div>
-        <div class="fpb">
-          <h4>Concentrated Liquidity Ranges</h4>
-          <p>Stake collateral into a price range with leverage — $1,000 of collateral represents $3,000–$5,000 of depth. Ranges slot into the order book as segmented virtual orders. Providers earn spread from every fill. Price exits the range → position auto-unwinds, collateral returned. No impermanent loss, no bots needed.</p>
-          <div class="how-tag" style="background:var(--blue2);color:var(--blue)">Pick a range → system distributes depth → earn spread on fills → price exits → auto-unwind</div>
-        </div>
+      <div class="soon">
+        <span class="chip">Coming soon</span>
+        <h3>In-Book Options</h3>
+        <p>Lock a limit order for a fixed duration and earn an upfront premium — turning any order into a covered call or put. Calls and puts trade inline on the same book, priced against visible depth. No options tab, no Black-Scholes — just a toggle.</p>
       </div>
     </div>
   </div>
 </section>
 
-<!-- ROADMAP -->
-<section class="sec" id="roadmap" style="padding-top:20px">
-  <div class="sec-in">
-    <div class="sec-label">Roadmap</div>
-    <h2 class="sec-h2">What's shipping.</h2>
-    <div class="rlist">
-      <div class="ri done"><div class="rt">Summer 2026 ✓</div><div><div class="rh">Devnet Live</div><div class="rp">Two-layer CLOB. Real Orders + AVL operational. Pro trading terminal.</div></div></div>
-      <div class="ri"><div class="rt">Late Q3 2026</div><div><div class="rh">Mainnet Alpha</div><div class="rp">SOL/USDC + 5 majors. Early user onboarding.</div></div></div>
-      <div class="ri"><div class="rt">Q4 2026</div><div><div class="rh">MM Intents v3</div><div class="rp">RFQ engine. Market maker onboarding. Reputation system live.</div></div></div>
-      <div class="ri"><div class="rt">Q1 2027</div><div><div class="rh">Permissionless Pairs</div><div class="rp">Public pair creation. Token launch partnerships. Creator fees.</div></div></div>
-      <div class="ri"><div class="rt">Q2 2027</div><div><div class="rh">Yield-Bearing Orders</div><div class="rp">Resting orders earn premium. Cross-protocol lending integration.</div></div></div>
-      <div class="ri"><div class="rt">Late 2027</div><div><div class="rh">Options + Predictions</div><div class="rp">Ultra-short options in-book. Liquidity prediction markets. Full PvP layer.</div></div></div>
+<!-- ===================== ROADMAP ===================== -->
+<section id="roadmap" style="background:linear-gradient(180deg,transparent,var(--bg-2),transparent)">
+  <div class="wrap">
+    <div class="eyebrow">Roadmap</div>
+    <h2>Every layer of liquidity, on the books.</h2>
+    <p class="lead">Built in layers — each one making the book deeper and the trader's edge sharper.</p>
+    <div class="road">
+      <div class="ritem done">
+        <span class="node"></span>
+        <div class="phase">Live now · Devnet</div>
+        <h4>Multi-layer CLOB</h4>
+        <p>Real Orders + AVL depth operational on one unified book. Pro trading terminal live.</p>
+      </div>
+      <div class="ritem">
+        <span class="node"></span>
+        <div class="phase">Next</div>
+        <h4>Mainnet & MM Intents</h4>
+        <p>Mainnet launch with SOL/USDC and major pairs, plus the market-maker intent layer and reputation system.</p>
+      </div>
+      <div class="ritem">
+        <span class="node"></span>
+        <div class="phase">Next</div>
+        <h4>Orbital Pools</h4>
+        <p>The first production Orbital AMM on Solana — one pool serving every pair in a basket. First basket: liquid staking tokens.</p>
+      </div>
+      <div class="ritem">
+        <span class="node"></span>
+        <div class="phase">Later</div>
+        <h4>Yield-Bearing Orders & In-Book Options</h4>
+        <p>Resting orders that earn while they wait, and calls and puts traded inline on the same book.</p>
+      </div>
     </div>
   </div>
 </section>
 
-<!-- CTA -->
-<section class="cta-sec">
-  <div class="cta-in">
-    <h2>Every layer of liquidity.<br>On the books.</h2>
-    <p>The first order book DEX on Solana that never looks empty.</p>
-    <div class="cta-btns">
-      <a href="https://app.stratabook.org" class="btn btn-p">Launch Trading Terminal</a>
-      <a href="https://github.com/limeneris-beep/strata" class="btn btn-o">View on GitHub</a>
+<!-- ===================== CTA ===================== -->
+<section>
+  <div class="wrap">
+    <div class="band">
+      <h2>There's always another layer.</h2>
+      <p class="lead">The first order book DEX on Solana that never looks empty. Trade the deepest book in DeFi.</p>
+      <div class="hero-cta">
+        <a class="btn btn-primary" href="https://strata-build.vercel.app" target="_blank" rel="noopener">Launch Terminal →</a>
+      </div>
     </div>
-  </div>
-</section>
-
-<!-- CONTACT -->
-<section class="sec" style="padding-top:0;padding-bottom:80px">
-  <div class="sec-in" style="text-align:center">
-    <div class="sec-label">Contact</div>
-    <h2 class="sec-h2" style="margin-bottom:12px">Get in touch.</h2>
-    <p style="color:var(--text2);font-size:15px;margin-bottom:28px;line-height:1.6">Questions, partnerships, or just want to say hi.</p>
-    <a href="https://t.me/phizen" target="_blank" rel="noopener" class="btn btn-o" style="font-size:15px;gap:10px">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21.2 3.2L2.5 10.8c-.7.3-.7 1.3 0 1.6l5.2 1.8 2 6.1c.2.6.9.7 1.3.2l2.8-3.4 5.2 3.8c.5.4 1.2.1 1.4-.5l3.8-15c.2-.8-.6-1.5-1.4-1.2z"/>
-        <line x1="8.5" y1="13.5" x2="19.5" y2="4.5"/>
-      </svg>
-      Telegram @phizen
-    </a>
-    <a href="mailto:stratabookdex@gmail.com" class="btn btn-o" style="font-size:15px;gap:10px">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <rect x="2" y="4" width="20" height="16" rx="2"/>
-        <path d="M22 4L12 13 2 4"/>
-      </svg>
-      stratabookdex@gmail.com
-    </a>
-    <a href="https://x.com/Stratabookdex" target="_blank" rel="noopener" class="btn btn-o" style="font-size:15px;gap:10px">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none">
-        <path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/>
-      </svg>
-      @Stratabookdex
-    </a>
   </div>
 </section>
 
 <footer>
-  <div class="fin">
-    <div class="fl"><div class="logo-s"><span></span><span></span><span></span></div>Strata &copy; 2026</div>
-    <div class="fr">
-      <a href="https://stratabook.org">stratabook.org</a>
-      <a href="https://github.com/limeneris-beep/strata">GitHub</a>
-      <a href="#layers">Order Book</a>
-      <a href="#flywheel">Flywheel</a>
+  <div class="wrap">
+    <div class="foot">
+      <div>
+        <div class="brand">
+          <svg class="mark" viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <rect x=".5" y=".5" width="31" height="31" rx="9" fill="#15171f" stroke="rgba(255,255,255,.10)"/>
+            <rect x="7" y="8" width="18" height="3.4" rx="1.7" fill="#5ec8b0"/>
+            <rect x="7" y="14.3" width="13.5" height="3.4" rx="1.7" fill="#ecc06a"/>
+            <rect x="7" y="20.6" width="9" height="3.4" rx="1.7" fill="#6166d6"/>
+          </svg>
+          Strata
+        </div>
+        <p class="muted">A multi-layer order book DEX on Solana. Real orders, MM intents, AVL depth, and the first Orbital pools — the deepest book in DeFi, where every trade fills.</p>
+      </div>
+      <div class="foot-links">
+        <div class="foot-col">
+          <h5>Product</h5>
+          <a href="#book">The Book</a>
+          <a href="#tech">Core Tech</a>
+          <a href="#orbital">Orbital Pools</a>
+          <a href="#next">What's Next</a>
+          <a href="#roadmap">Roadmap</a>
+        </div>
+        <div class="foot-col">
+          <h5>Trade</h5>
+          <a href="https://strata-build.vercel.app" target="_blank" rel="noopener">Launch Terminal</a>
+        </div>
+        <div class="foot-col">
+          <h5>Connect</h5>
+          <a href="https://x.com/Stratabookdex" target="_blank" rel="noopener">X / Twitter</a>
+          <a href="mailto:stratabookdex@gmail.com">Email</a>
+          <a href="https://stratabook.org" target="_blank" rel="noopener">stratabook.org</a>
+        </div>
+      </div>
+    </div>
+    <div class="copy">
+      <span>Strata © 2026 · stratabook.org</span>
+      <span>Live on Solana devnet</span>
     </div>
   </div>
 </footer>
 
+<script>
+  // scroll reveal
+  const els = document.querySelectorAll('section .wrap > *, .stack, .grid3, .flow, .grid2');
+  els.forEach(e=>e.classList.add('reveal'));
+  const io = new IntersectionObserver((entries)=>{
+    entries.forEach(en=>{ if(en.isIntersecting){ en.target.classList.add('in'); io.unobserve(en.target);} });
+  },{threshold:.12});
+  els.forEach(e=>io.observe(e));
+</script>
 </body>
 </html>
