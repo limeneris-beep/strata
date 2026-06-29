@@ -1,0 +1,19 @@
+{
+  "routes": [
+    {
+      "src": "/strata_vc_deck.html",
+      "dest": "/strata_vc_deck.html"
+    },
+    {
+      "src": "/strata-terminal.html",
+      "dest": "/strata-terminal.html"
+    },
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
+}
